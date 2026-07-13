@@ -1,0 +1,84 @@
+You are writing a complete marketplace listing for Amazon India, Flipkart, and Meesho.
+
+TONE: {tone}
+LANGUAGE: {language}
+
+PRODUCT DATA:
+{product_data}
+
+Write comprehensive, high-converting listings for ALL three marketplaces with proper SEO.
+
+Return STRICT JSON with EXACTLY this structure:
+
+{{
+  "amazon": {{
+    "title": "SEO-optimized title with brand + key attributes (max 200 chars)",
+    "bullets": [
+      "Bullet 1: Focus on PRIMARY benefit (max 500 chars)",
+      "Bullet 2: Focus on SECONDARY benefit (max 500 chars)",
+      "Bullet 3: Focus on material/quality (max 500 chars)",
+      "Bullet 4: Focus on use cases (max 500 chars)",
+      "Bullet 5: Focus on value/warranty (max 500 chars)"
+    ],
+    "description": "Engaging 3-5 paragraph description with natural keyword integration (max 2000 chars)",
+    "backend_keywords": "space separated search terms no commas max 250 chars no repeats",
+    "search_terms": ["buyer search phrase 1", "buyer search phrase 2", "...", "phrase 12"],
+    "generic_keywords": ["broad keyword 1", "broad keyword 2", "...", "keyword 10"],
+    "subject_matter": ["subject 1", "subject 2", "subject 3"],
+    "aplus_content_suggestions": [
+      "A+ module idea 1",
+      "A+ module idea 2",
+      "A+ module idea 3"
+    ]
+  }},
+  "flipkart": {{
+    "title": "Clear product title with key specs (max 150 chars)",
+    "highlights": [
+      "Highlight 1 (max 120 chars)",
+      "Highlight 2 (max 120 chars)",
+      "Highlight 3 (max 120 chars)",
+      "Highlight 4 (max 120 chars)",
+      "Highlight 5 (max 120 chars)"
+    ],
+    "description": "Feature-focused description (max 2000 chars)",
+    "specifications": {{
+      "Brand": "value",
+      "Material": "value",
+      "Color": "value",
+      "Size": "value",
+      "Weight": "value"
+    }},
+    "search_keywords": ["keyword 1", "keyword 2", "...", "keyword 12"]
+  }},
+  "meesho": {{
+    "title": "Simple, clear product title (max 120 chars)",
+    "description": "Value-focused description for budget buyers (max 1500 chars)",
+    "highlights": [
+      "Highlight 1",
+      "Highlight 2",
+      "Highlight 3",
+      "Highlight 4"
+    ],
+    "tags": ["tag1", "tag2", "...", "tag12"]
+  }},
+  "seo": {{
+    "primary_keywords": ["main keyword 1", "main keyword 2", "main keyword 3"],
+    "secondary_keywords": ["secondary 1", "secondary 2", "...", "secondary 8"],
+    "long_tail_keywords": ["long tail phrase 1", "long tail phrase 2", "...", "phrase 8"],
+    "trending_keywords": ["trending 1", "trending 2", "...", "trending 6"],
+    "competitor_keywords": ["competitor term 1", "competitor term 2", "...", "term 6"],
+    "meta_description": "Compelling meta description max 160 chars for search engines"
+  }}
+}}
+
+IMPORTANT RULES:
+1. Every bullet point MUST be unique - no repetition
+2. Every highlight MUST be unique - no repetition
+3. Integrate keywords NATURALLY - no stuffing
+4. Use proper grammar and punctuation
+5. Each marketplace has different character limits - RESPECT THEM
+6. Focus on benefits over features
+7. Make it conversational and human
+8. Include relevant emojis sparingly in Meesho (Indian audience)
+9. Amazon bullets should start with a feature label in CAPS
+10. Flipkart highlights should be concise feature statements

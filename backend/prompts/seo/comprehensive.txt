@@ -1,0 +1,66 @@
+Generate comprehensive SEO keywords and metadata for this e-commerce product.
+
+PRODUCT DATA:
+{product_data}
+
+Return STRICT JSON with this structure:
+
+{{
+  "primary_keywords": [
+    "Most important keyword 1",
+    "Most important keyword 2",
+    "Most important keyword 3",
+    "Most important keyword 4",
+    "Most important keyword 5"
+  ],
+  "secondary_keywords": [
+    "Supporting keyword 1",
+    "Supporting keyword 2",
+    "Supporting keyword 3",
+    "Supporting keyword 4",
+    "Supporting keyword 5",
+    "Supporting keyword 6",
+    "Supporting keyword 7",
+    "Supporting keyword 8"
+  ],
+  "long_tail_keywords": [
+    "specific long phrase 1",
+    "specific long phrase 2",
+    "specific long phrase 3",
+    "specific long phrase 4",
+    "specific long phrase 5",
+    "specific long phrase 6",
+    "specific long phrase 7",
+    "specific long phrase 8"
+  ],
+  "trending_keywords": [
+    "trending term 1 for 2025",
+    "trending term 2 for 2025",
+    "trending term 3 for 2025",
+    "trending term 4 for 2025",
+    "trending term 5 for 2025",
+    "trending term 6 for 2025"
+  ],
+  "competitor_keywords": [
+    "competitor brand term 1",
+    "competitor brand term 2",
+    "competitor brand term 3",
+    "competitor brand term 4",
+    "competitor brand term 5",
+    "competitor brand term 6"
+  ],
+  "meta_description": "Compelling 150-160 character meta description with primary keyword and call-to-action",
+  "seo_score": 85,
+  "readability_score": 80,
+  "keyword_density": 2.5
+}}
+
+Guidelines:
+- Primary keywords: Highest search volume, most relevant
+- Secondary keywords: Good volume, relevant variations
+- Long-tail keywords: Specific buyer intent phrases (3-6 words)
+- Trending keywords: Current 2025 trends in this category
+- Competitor keywords: Alternative brands/products buyers search for
+- SEO score: Rate keyword quality 0-100
+- Readability score: Rate how natural keywords read 0-100
+- Keyword density: Optimal percentage (2-4% is ideal)

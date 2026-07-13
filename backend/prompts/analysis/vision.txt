@@ -1,0 +1,25 @@
+Analyze this product image and extract accurate product attributes.
+
+Return STRICT JSON with this exact structure:
+
+{{
+  "category": "Main product category (e.g., Home & Kitchen, Electronics)",
+  "sub_category": "Specific subcategory (e.g., Water Bottles, Headphones)",
+  "material": "Primary material (e.g., Stainless Steel, Plastic, Cotton)",
+  "color": "Dominant color(s) visible",
+  "pattern": "Pattern type if visible (e.g., Solid, Printed, Striped)",
+  "shape": "Product shape (e.g., Cylindrical, Rectangular, Round)",
+  "estimated_dimensions": "Approximate size based on visual cues (e.g., '500ml', '15x10 cm')",
+  "capacity": "Capacity if applicable (e.g., '1 Liter', 'N/A')",
+  "product_type": "Specific product type (e.g., 'Insulated Water Bottle', 'Wireless Mouse')",
+  "product_name": "Concise, descriptive product name (max 50 chars)",
+  "brand": "Brand name if visible on product, else empty string",
+  "features": "Comma-separated list of visible key features"
+}}
+
+Instructions:
+- Be specific and accurate
+- If unsure about a field, provide best estimate or empty string
+- Focus on what is VISIBLE in the image
+- Product name should be market-ready (e.g., 'Premium Stainless Steel Water Bottle' not 'bottle')
+- Features should be observable (e.g., 'leak-proof cap, double-wall insulation, wide mouth')
