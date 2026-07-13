@@ -1,14 +1,23 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Download, Loader2, FileSpreadsheet, ShoppingCart, Store, Boxes } from "lucide-react";
+import {
+  Download, Loader2, FileSpreadsheet, ShoppingCart, Store, Boxes,
+  ShoppingBag, FileJson, FileArchive, Package2,
+} from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import Breadcrumbs from "@/components/Breadcrumbs";
 
 const EXPORT_TYPES = [
-  { key: "amazon", label: "Amazon Excel", desc: "Title, 5 bullets, description & backend keywords.", icon: ShoppingCart },
-  { key: "flipkart", label: "Flipkart Excel", desc: "Title, highlights, description & SEO keywords.", icon: Store },
-  { key: "generic", label: "Generic Excel", desc: "Full product + listing data, marketplace-agnostic.", icon: Boxes },
+  { key: "amazon", label: "Amazon Excel", ext: "xlsx", desc: "Title, 5 bullets, description, backend keywords & search terms.", icon: ShoppingCart },
+  { key: "flipkart", label: "Flipkart Excel", ext: "xlsx", desc: "Title, highlights, description & search keywords.", icon: Store },
+  { key: "meesho", label: "Meesho Excel", ext: "xlsx", desc: "Title, highlights, description & discovery tags.", icon: Package2 },
+  { key: "shopify", label: "Shopify CSV", ext: "csv", desc: "Product import CSV with handle, body & variants.", icon: ShoppingBag },
+  { key: "woocommerce", label: "WooCommerce CSV", ext: "csv", desc: "WooCommerce product importer format.", icon: ShoppingBag },
+  { key: "generic", label: "Generic Excel", ext: "xlsx", desc: "Full product + listing data, marketplace-agnostic.", icon: Boxes },
+  { key: "json", label: "JSON Export", ext: "json", desc: "Structured JSON for developers & APIs.", icon: FileJson },
+  { key: "zip", label: "ZIP with Images", ext: "zip", desc: "Generic Excel bundled with all generated images.", icon: FileArchive },
 ];
 
 export default function Exports() {
@@ -28,26 +37,30 @@ export default function Exports() {
     loadExports();
   }, []);
 
-  const handleExport = async (type) => {
-    setBusy(type);
+  const handleExport = async (t) => {
+    setBusy(t.key);
     try {
-      const res = await api.post(
-        "/exports",
-        { export_type: type },
-        { responseType: "blob" }
-      );
+      const res = await api.post("/exports", { export_type: t.key }, { responseType: "blob" });
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const a = document.createElement("a");
       a.href = url;
-      a.download = `ai-listing-${type}.xlsx`;
+      a.download = `ai-listing-${t.key}.${t.ext}`;
       document.body.appendChild(a);
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
-      toast.success(`${type} export downloaded`);
+      toast.success(`${t.label} downloaded`);
       loadExports();
     } catch (e) {
-      const msg = e?.response?.status === 400 ? "No products to export yet" : "Export failed";
+      let msg = "Export failed";
+      if (e?.response?.status === 400) {
+        try {
+          const text = await e.response.data.text();
+          msg = JSON.parse(text).detail || "No products to export yet";
+        } catch {
+          msg = "No products to export yet";
+        }
+      }
       toast.error(msg);
     } finally {
       setBusy(null);
@@ -57,32 +70,28 @@ export default function Exports() {
   return (
     <div className="space-y-8" data-testid="exports-page">
       <div>
+        <Breadcrumbs items={[{ label: "Dashboard", to: "/dashboard" }, { label: "Exports" }]} />
         <p className="font-mono text-xs uppercase tracking-widest text-accent mb-2">Download</p>
         <h1 className="font-heading font-black text-3xl sm:text-4xl tracking-tight">Exports</h1>
-        <p className="text-muted-foreground mt-2">Generate marketplace-ready .xlsx files from your listings.</p>
+        <p className="text-muted-foreground mt-2">Generate marketplace-ready files across every channel.</p>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-4">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {EXPORT_TYPES.map((t, i) => (
           <motion.div
             key={t.key}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.08 }}
-            className="rounded-2xl border border-border bg-card p-6 flex flex-col"
+            transition={{ delay: i * 0.05 }}
+            className="rounded-2xl border border-border bg-card p-5 flex flex-col"
             data-testid={`export-card-${t.key}`}
           >
-            <div className="h-11 w-11 rounded-xl bg-secondary flex items-center justify-center mb-4">
+            <div className="h-10 w-10 rounded-xl bg-secondary flex items-center justify-center mb-3">
               <t.icon className="h-5 w-5" />
             </div>
-            <h3 className="font-heading font-bold text-lg">{t.label}</h3>
-            <p className="text-sm text-muted-foreground mt-1 flex-1">{t.desc}</p>
-            <Button
-              onClick={() => handleExport(t.key)}
-              disabled={busy === t.key}
-              className="rounded-full mt-5 font-semibold"
-              data-testid={`export-btn-${t.key}`}
-            >
+            <h3 className="font-heading font-bold">{t.label}</h3>
+            <p className="text-xs text-muted-foreground mt-1 flex-1">{t.desc}</p>
+            <Button onClick={() => handleExport(t)} disabled={busy === t.key} className="rounded-full mt-4 font-semibold" size="sm" data-testid={`export-btn-${t.key}`}>
               {busy === t.key ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Download className="mr-1 h-4 w-4" />}
               Export
             </Button>
@@ -97,21 +106,15 @@ export default function Exports() {
         ) : (
           <div className="space-y-2">
             {exports.map((ex) => (
-              <div
-                key={ex.id}
-                className="flex items-center justify-between rounded-xl border border-border px-4 py-3"
-                data-testid={`export-history-${ex.id}`}
-              >
+              <div key={ex.id} className="flex items-center justify-between rounded-xl border border-border px-4 py-3" data-testid={`export-history-${ex.id}`}>
                 <div className="flex items-center gap-3">
                   <FileSpreadsheet className="h-4 w-4 text-muted-foreground" />
                   <div>
                     <p className="font-medium capitalize">{ex.export_type} export</p>
-                    <p className="text-xs text-muted-foreground">
-                      {ex.product_count} products · {new Date(ex.created_at).toLocaleString()}
-                    </p>
+                    <p className="text-xs text-muted-foreground">{ex.product_count} products · {new Date(ex.created_at).toLocaleString()}</p>
                   </div>
                 </div>
-                <span className="text-xs text-muted-foreground font-mono">{ex.filename}</span>
+                <span className="text-xs text-muted-foreground font-mono hidden sm:block">{ex.filename}</span>
               </div>
             ))}
           </div>

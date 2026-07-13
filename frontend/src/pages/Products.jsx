@@ -32,6 +32,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import Breadcrumbs from "@/components/Breadcrumbs";
 
 const STATUS_STYLE = {
   draft: "bg-secondary text-secondary-foreground",
@@ -82,6 +83,7 @@ export default function Products() {
     <div className="space-y-8" data-testid="products-page">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
+          <Breadcrumbs items={[{ label: "Dashboard", to: "/dashboard" }, { label: "Products" }]} />
           <p className="font-mono text-xs uppercase tracking-widest text-accent mb-2">Catalog</p>
           <h1 className="font-heading font-black text-3xl sm:text-4xl tracking-tight">Products</h1>
         </div>
@@ -145,12 +147,12 @@ export default function Products() {
               {products.map((p) => (
                 <TableRow key={p.id} data-testid={`product-row-${p.id}`}>
                   <TableCell
-                    className="font-medium cursor-pointer"
+                    className="font-medium cursor-pointer max-w-[280px]"
                     onClick={() => navigate(`/products/${p.id}`)}
                   >
-                    <span className="inline-flex items-center gap-1">
-                      {p.product_name}
-                      <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="inline-flex items-center gap-1 max-w-full">
+                      <span className="truncate">{p.product_name}</span>
+                      <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                     </span>
                   </TableCell>
                   <TableCell className="hidden sm:table-cell text-muted-foreground">{p.brand || "—"}</TableCell>

@@ -65,9 +65,9 @@ function SidebarContent({ onNavigate }) {
         ))}
       </nav>
       <div className="p-4 m-3 rounded-2xl bg-secondary">
-        <p className="font-heading text-xs font-bold mb-1">Mock AI enabled</p>
+        <p className="font-heading text-xs font-bold mb-1">AI Engine ready</p>
         <p className="text-xs text-muted-foreground">
-          Swap providers anytime in Settings — the pipeline is production ready.
+          Configure your provider or bring your own key in Settings.
         </p>
       </div>
     </div>
