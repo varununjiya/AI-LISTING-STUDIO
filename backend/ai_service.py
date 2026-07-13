@@ -18,6 +18,7 @@ import logging
 from typing import Dict, Any, List, Optional
 
 from ai_engine import AIManager
+from ai_engine.ai_manager import NoAPIKeyError
 
 logger = logging.getLogger("ai_service")
 
@@ -31,10 +32,6 @@ def get_ai_manager() -> AIManager:
     if _ai_manager is None:
         _ai_manager = AIManager()
     return _ai_manager
-
-
-# Re-export the NoAPIKeyError from AI Manager
-NoAPIKeyError = AIManager.__module__ + ".NoAPIKeyError"
 
 
 # Marketplace character limits (for validation and scoring)

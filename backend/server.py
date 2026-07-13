@@ -407,6 +407,35 @@ async def get_quality(product_id: str, user: User = Depends(get_current_user)):
     return ai_service.compute_quality_score(product, listing)
 
 
+@api_router.post("/products/{product_id}/generate-seo")
+async def generate_seo_endpoint(product_id: str, user: User = Depends(get_current_user)):
+    """Generate comprehensive SEO keywords and metadata for a product."""
+    product = await db.products.find_one({"id": product_id, "user_id": user.user_id}, {"_id": 0})
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    settings = await _get_settings(user.user_id)
+    try:
+        seo_data = await ai_service.generate_seo(product, settings)
+    except ai_service.NoAPIKeyError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:  # noqa: BLE001
+        logger.error("SEO generation failed: %s", e)
+        raise HTTPException(status_code=502, detail=f"SEO generation failed: {e}")
+    
+    # Update or merge with existing listing
+    listing = await db.generated_listings.find_one({"product_id": product_id, "user_id": user.user_id}, {"_id": 0})
+    if listing:
+        # Merge SEO data into existing listing
+        merged = {**listing, **seo_data}
+        await _store_listing(user.user_id, product_id, merged, "seo_generated")
+    else:
+        # Create new listing with SEO data
+        await _store_listing(user.user_id, product_id, seo_data, "seo_generated")
+    
+    await log_activity(user.user_id, "seo", f"Generated SEO for '{product.get('product_name')}'", product_id)
+    return seo_data
+
+
 @api_router.get("/products/{product_id}/versions")
 async def get_versions(product_id: str, user: User = Depends(get_current_user)):
     listing = await db.generated_listings.find_one({"product_id": product_id, "user_id": user.user_id}, {"_id": 0})
@@ -635,6 +664,22 @@ async def stats(user: User = Depends(get_current_user)):
 
     recent_activity = await db.activity.find({"user_id": uid}, {"_id": 0}).sort("at", -1).to_list(10)
 
+    # Monthly stats for the last 6 months
+    from datetime import datetime, timedelta
+    six_months_ago = datetime.now(timezone.utc) - timedelta(days=180)
+    
+    monthly_pipeline = [
+        {"$match": {"user_id": uid, "created_at": {"$gte": six_months_ago.isoformat()}}},
+        {"$group": {
+            "_id": {"$substr": ["$created_at", 0, 7]},  # YYYY-MM
+            "count": {"$sum": 1}
+        }},
+        {"$sort": {"_id": 1}},
+        {"$limit": 6}
+    ]
+    monthly_data = await db.products.aggregate(monthly_pipeline).to_list(6)
+    monthly_products = [{"month": d["_id"], "count": d["count"]} for d in monthly_data]
+
     return {
         "total": total, "draft": draft, "completed": completed, "exported": exported,
         "listings_generated": listings_generated, "images_generated": images_generated,
@@ -642,6 +687,7 @@ async def stats(user: User = Depends(get_current_user)):
         "marketplace_distribution": distribution,
         "category_distribution": cat_counts,
         "recent_activity": recent_activity,
+        "monthly_trends": monthly_products,
     }
 
 
@@ -861,6 +907,15 @@ async def create_export(payload: Dict[str, Any], user: User = Depends(get_curren
 @api_router.get("/exports")
 async def list_exports(user: User = Depends(get_current_user)):
     return await db.exports.find({"user_id": user.user_id}, {"_id": 0}).sort("created_at", -1).to_list(100)
+
+
+# --------------------------------------------------------------------------- #
+# AI System Stats
+# --------------------------------------------------------------------------- #
+@api_router.get("/ai/stats")
+async def get_ai_stats(user: User = Depends(get_current_user)):
+    """Get AI system statistics and health."""
+    return ai_service.get_ai_stats()
 
 
 # --------------------------------------------------------------------------- #

@@ -3,11 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Package, FileText, ImageIcon, Download, Plus, Search, ArrowUpRight,
-  Gauge, Activity, Sparkles, Boxes,
+  Gauge, Activity, Sparkles, Boxes, TrendingUp,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
-  PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, Tooltip as RTooltip,
+  PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip as RTooltip,
+  LineChart, Line, CartesianGrid, Legend,
 } from "recharts";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -88,6 +89,11 @@ export default function Dashboard() {
   const catData = Object.entries(stats?.category_distribution || {})
     .map(([name, value]) => ({ name: name.length > 10 ? name.slice(0, 10) + "…" : name, value }))
     .slice(0, 6);
+
+  const monthlyData = (stats?.monthly_trends || []).map(m => ({
+    month: m.month ? new Date(m.month + "-01").toLocaleDateString('en-US', { month: 'short' }) : "",
+    count: m.count || 0
+  }));
 
   const avgQuality = stats?.avg_quality || 0;
 
@@ -188,6 +194,49 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Monthly trends chart */}
+      {monthlyData.length > 0 && (
+        <div className="rounded-2xl border border-border bg-card p-6" data-testid="monthly-trends-card">
+          <div className="flex items-center gap-2 mb-4">
+            <TrendingUp className="h-4 w-4 text-accent" />
+            <h3 className="font-heading font-bold text-sm">Monthly Trends (Last 6 Months)</h3>
+          </div>
+          <div className="h-52">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={monthlyData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis 
+                  dataKey="month" 
+                  tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} 
+                  axisLine={false} 
+                  tickLine={false} 
+                />
+                <YAxis 
+                  tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} 
+                  axisLine={false} 
+                  tickLine={false} 
+                />
+                <RTooltip 
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "0.5rem"
+                  }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="count" 
+                  stroke="#4F46E5" 
+                  strokeWidth={3}
+                  dot={{ fill: "#4F46E5", r: 5 }}
+                  activeDot={{ r: 7 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
 
       {/* Category chart */}
       {catData.length > 0 && (
