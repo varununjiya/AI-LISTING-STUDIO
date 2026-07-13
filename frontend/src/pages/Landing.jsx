@@ -83,7 +83,7 @@ function Nav() {
             </button>
             <Button
               data-testid="landing-login-btn"
-              onClick={() => (user ? navigate("/dashboard") : startGoogleLogin())}
+              onClick={() => navigate(user ? "/dashboard" : "/login")}
               className="rounded-full font-semibold"
             >
               {user ? "Dashboard" : "Sign in"}
