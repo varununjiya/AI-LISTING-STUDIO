@@ -1,0 +1,150 @@
+{
+  "art_direction": {
+    "mood": "Gen-Z 3D meets High-Performance E-commerce SaaS",
+    "description": "An award-worthy, high-energy Awwwards-style design. The marketing page is bold, utilizing kinetic typography, immersive 3D elements (Spline), and scroll-linked animations. The authenticated dashboard leans into functional Neo-Brutalism: high contrast, sharp interfaces, and deep focus, ensuring optimal usability while retaining the brand's edgy personality.",
+    "key_traits": ["Kinetic", "Immersive 3D", "High Contrast", "Editorial Tension", "Momentum Scrolling"]
+  },
+  "colors": {
+    "archetype": "Electric & Neon (Y2K / Gen Z)",
+    "light_mode": {
+      "background": "#F5F5F3",
+      "surface": "#FFFFFF",
+      "primary": "#4F46E5",
+      "primary_foreground": "#FFFFFF",
+      "accent": "#E2FF54",
+      "accent_foreground": "#000000",
+      "text_primary": "#0A0A0A",
+      "text_secondary": "#525252",
+      "border": "#E5E5E5",
+      "destructive": "#FF3B30",
+      "success": "#00C853"
+    },
+    "dark_mode": {
+      "background": "#050505",
+      "surface": "#121212",
+      "primary": "#E2FF54",
+      "primary_foreground": "#000000",
+      "accent": "#4F46E5",
+      "accent_foreground": "#FFFFFF",
+      "text_primary": "#FAFAFA",
+      "text_secondary": "#A3A3A3",
+      "border": "#262626",
+      "destructive": "#FF453A",
+      "success": "#32D74B"
+    },
+    "rules": [
+      "No pure #000000 or #ffffff without purpose. Use tinted neutrals.",
+      "Limit the primary/accent neon colors strictly to interactive elements (CTAs, active states) and key graphical highlights.",
+      "Ensure text contrast meets APCA/WCAG standards on hover states."
+    ]
+  },
+  "typography": {
+    "heading_font": "Unbounded",
+    "body_font": "Outfit",
+    "rules": [
+      "H1 (Hero): Fluid text-5xl to text-7xl, tight tracking (tracking-tighter), leading-none.",
+      "H2 (Section/Manifesto): text-4xl to text-5xl.",
+      "Never use Inter or generic sans for headings. Unbounded gives the Y2K/Tech vibe.",
+      "Body text should be highly legible, using Outfit.",
+      "Labels/Overlines: Uppercase, tracking-widest, text-xs font-bold."
+    ]
+  },
+  "spacing_and_layout": {
+    "grid_system": "Bento Grid Protocol",
+    "marketing_spacing": "Generous (py-24 to py-32 for sections).",
+    "dashboard_spacing": "Dense (p-4 to p-6 for cards, gap-4 to gap-6 for grids).",
+    "corners": "Rounded cards (rounded-2xl) in the dashboard, but offset with sharp inner elements for a tech feel."
+  },
+  "landing_page_blueprint": {
+    "navigation": "Sticky glassmorphism header (backdrop-blur-xl bg-background/70), Brand Logo left, Navigation center, Google Login CTA right.",
+    "hero": {
+      "layout": "Min-h-screen relative layout.",
+      "motion": "Kinetic text reveal on load. Use framer-motion to mask and reveal H1 line-by-line.",
+      "3d_element": "Integrate @splinetool/react-spline for a Gen-Z 3D interactive floating shape or abstract e-commerce elements (boxes/spheres) in the background or side.",
+      "content": "Massive H1: 'Listings that Outsmart the Algorithm.' Subtitle, Primary CTA: 'Start Generating - It\\'s Free'."
+    },
+    "marquee": "Slow, editorial marquee ticker with outlined text ('AMAZON • FLIPKART • AI GENERATION') using react-fast-marquee.",
+    "manifesto_chapters": {
+      "description": "Numbered scroll-reveal sections explaining the AI logic.",
+      "visuals": "Real product photography (e.g., floating sneakers) in clipped, rounded frames with a spotlight effect."
+    },
+    "showcase": "Bento grid layout showing mockups of the AI generating 5 bullets and SEO keywords.",
+    "footer": "Massive typography (text-[10vw]) 'AI STUDIO', dark high-contrast area."
+  },
+  "dashboard_app_system": {
+    "layout": "Sidebar Navigation on left (Dashboard, Products, Bulk Upload, Exports, Settings), Main content area on right.",
+    "topbar": "Search bar, Dark Mode Toggle, User Profile.",
+    "dashboard_home": "4 Stat Cards (Total Products, Draft, Completed, Exported). Recent Products Table with Search & Filter, 'Add Product' Button.",
+    "add_product_page": "Multi-field form (Title, Category, Price, etc.) + Multiple Image Upload dropzone.",
+    "product_details_page": "Tabs (Shadcn Tabs): Product Information, Amazon Listing, Flipkart Listing, SEO Keywords, History.",
+    "ai_review_screen": "Editable text areas for generated content. Each section (Title, Bullets, Desc) has inline buttons: Copy, Regenerate, Save.",
+    "bulk_upload": "Drag and drop area for Excel/CSV, Table preview of parsed data, 'Generate Listings for All' button.",
+    "exports": "List of recent exports with download buttons (Amazon/Flipkart/Generic .xlsx).",
+    "settings": "Form for AI Provider, API Key, Default Marketplace, Brand Tone, Language, Defaults."
+  },
+  "components": {
+    "cards": "Subtle borders (border-border), flat backgrounds. Hover: slight negative Y translation (-translate-y-1) and enhanced shadow.",
+    "buttons": "Pill-shaped (rounded-full) for marketing, rounded-md for dashboard. Primary buttons use the Accent color (e.g., Acid Green in dark mode) with black text for high contrast.",
+    "tables": "Shadcn Tables. Clean, 1px bottom borders, hover background on rows.",
+    "forms": "Shadcn Form elements. Floating labels or clean stacked labels.",
+    "tabs": "Shadcn Tabs. Override height if needed. Active tab should have high contrast text and clear indicator."
+  },
+  "motion_and_interactions": {
+    "scroll": "Use Lenis for smooth momentum scrolling on the landing page.",
+    "reveals": "Framer Motion 'whileInView' for section reveals (fade up, slight scale).",
+    "micro_interactions": "All buttons need hover and active states (scale down slightly on active).",
+    "loading": "Skeleton loaders (Shadcn) for dashboard data. Bespoke ASCII or spinner loader for AI Generation action.",
+    "toasts": "Use Sonner for all success/error notifications (e.g., 'Listing Regenerated')."
+  },
+  "image_urls": {
+    "hero_abstract_3d": {
+      "url": "https://images.unsplash.com/photo-1710244182004-1c708b3f146d?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NzV8MHwxfHNlYXJjaHwyfHx0cmVuZHklMjBnZW4lMjB6JTIwYWJzdHJhY3QlMjAzZCUyMHNoYXBlfGVufDB8fHx8MTc4MzkzMzg3NHww&ixlib=rb-4.1.0&q=85",
+      "description": "Yellow ball and pink object abstract 3d shape. Use in hero or feature backgrounds."
+    },
+    "product_sneakers_1": {
+      "url": "https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1ODB8MHwxfHNlYXJjaHwxfHxmbG9hdGluZyUyMHNuZWFrZXJzJTIwcHJvZHVjdCUyMHBob3RvZ3JhcGh5JTIwc3R1ZGlvfGVufDB8fHx8MTc4MzkzMzg3NHww&ixlib=rb-4.1.0&q=85",
+      "description": "Floating white and red Nike sneaker. Use in the manifesto/showcase section."
+    },
+    "product_sneakers_2": {
+      "url": "https://images.unsplash.com/photo-1560769629-975ec94e6a86?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1ODB8MHwxfHNlYXJjaHwyfHxmbG9hdGluZyUyMHNuZWFrZXJzJTIwcHJvZHVjdCUyMHBob3RvZ3JhcGh5JTIwc3R1ZGlvfGVufDB8fHx8MTc4MzkzMzg3NHww&ixlib=rb-4.1.0&q=85",
+      "description": "Athletic shoes on a white box. Use for product details mockup page."
+    },
+    "dashboard_mockup": {
+      "url": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzF8MHwxfHNlYXJjaHwxfHxlY29tbWVyY2UlMjBkYXNoYm9hcmQlMjBsYXB0b3AlMjBzZXR1cHxlbnwwfHx8fDE3ODM5MzM4NzR8MA&ixlib=rb-4.1.0&q=85",
+      "description": "Graphs of performance analytics on a laptop screen. Use as a background or contextual image for the dashboard features."
+    }
+  },
+  "technical_libraries": [
+    "framer-motion (Animations & Page transitions)",
+    "@studio-freight/react-lenis (Smooth scrolling)",
+    "@splinetool/react-spline (3D Gen-Z visual elements)",
+    "react-fast-marquee (Editorial text ticker)",
+    "lucide-react (Icons)",
+    "sonner (Toast notifications)",
+    "recharts (If needed for future stats)"
+  ],
+  "accessibility": [
+    "All interactive elements MUST include a data-testid attribute.",
+    "Ensure contrast ratios meet APCA standards.",
+    "Support prefers-reduced-motion for all Framer Motion animations."
+  ],
+  "instructions_to_main_agent": {
+    "1": "Install required fonts: Unbounded and Outfit via Google Fonts in index.html or import in CSS.",
+    "2": "Setup Tailwind with the exact color variables provided for light and dark modes. Ensure dark mode toggle works seamlessly.",
+    "3": "Implement the marketing landing page in `src/pages/Landing.jsx` (or similar). Integrate Lenis for the entire app but especially optimized for the landing route. Use Spline for the 3D hero moment.",
+    "4": "Build the Dashboard layout with a fixed Sidebar and dynamic main content area using react-router-dom.",
+    "5": "Use Shadcn components for Buttons, Cards, Inputs, Tables, and Tabs in the dashboard to maintain a clean SaaS look.",
+    "6": "Add `data-testid` to all forms, inputs, tabs, and action buttons.",
+    "7": "Do not center align `.App`. Keep text left-aligned by default unless in a specific hero container."
+  },
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "Do not converge toward generic AI slop. Create depth with layered elements and z-index hierarchy.",
+    "Use glass-morphism effects carefully with backdrop-blur-xl.",
+    "Never apply `transition: all`. Use specific transitions like `transition: transform 0.2s ease`.",
+    "Use modern button styles with clear hover/active state changes.",
+    "Do not use AI emoji characters for icons; use lucide-react.",
+    "Use generous spacing (p-8, p-12) for the landing page to avoid cramped designs.",
+    "Prioritize Shadcn components in `src/components/ui/` for consistency.",
+    "Use Sonner for toasts."
+  ]
+}
