@@ -925,7 +925,12 @@ async def get_ai_stats(user: User = Depends(get_current_user)):
 async def get_settings(user: User = Depends(get_current_user)):
     s = await _get_settings(user.user_id)
     s["ai_configured"] = ai_service.has_ai_configured(s)
-    s["emergent_key_available"] = bool(ai_service.EMERGENT_LLM_KEY)
+    # Check if image generation is available via AI Manager
+    try:
+        manager = ai_service.get_ai_manager()
+        s["emergent_key_available"] = manager.has_image_generation_configured()
+    except Exception:
+        s["emergent_key_available"] = False
     # never leak the raw api key back fully
     if s.get("api_key"):
         s["api_key_set"] = True
