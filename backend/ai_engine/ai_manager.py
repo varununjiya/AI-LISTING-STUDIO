@@ -7,19 +7,18 @@ from typing import Dict, Any, List, Optional, Tuple
 from pathlib import Path
 
 from dotenv import load_dotenv
-from emergentintegrations.llm.chat import LlmChat, UserMessage, ImageContent
 
 from .openrouter_service import OpenRouterService, NoAPIKeyError as ORNoAPIKeyError
 from .model_router import ModelRouter
 from .prompt_manager import PromptManager
 from .response_formatter import ResponseFormatter
+from .pollinations_service import get_pollinations_service
 
 load_dotenv(Path(__file__).parent.parent / ".env")
 
 logger = logging.getLogger("ai_manager")
 
-EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY")
-IMAGE_MODEL = os.environ.get("MODEL_IMAGE_GENERATION", "gemini-3.1-flash-image-preview")
+IMAGE_GENERATION_SERVICE = os.environ.get("IMAGE_GENERATION_SERVICE", "pollinations")
 
 
 class NoAPIKeyError(Exception):
@@ -27,13 +26,15 @@ class NoAPIKeyError(Exception):
 
 
 class AIManager:
-    """Central AI orchestrator using OpenRouter for text/vision and Gemini for image gen."""
+    """Central AI orchestrator using OpenRouter for text/vision and Pollinations for images."""
 
     def __init__(self):
         self.openrouter = OpenRouterService()
         self.model_router = ModelRouter()
         self.prompt_manager = PromptManager()
         self.formatter = ResponseFormatter()
+        self.pollinations = get_pollinations_service()
+        self.image_service = IMAGE_GENERATION_SERVICE
     
     def has_openrouter_configured(self) -> bool:
         """Check if OpenRouter is configured."""
@@ -44,8 +45,10 @@ class AIManager:
             return False
     
     def has_image_generation_configured(self) -> bool:
-        """Check if image generation (via Emergent Key) is configured."""
-        return bool(EMERGENT_LLM_KEY)
+        """Check if image generation is configured."""
+        if self.image_service == "pollinations":
+            return True  # Pollinations is always available (no API key needed)
+        return False
     
     async def generate_listing(
         self, product: Dict[str, Any], settings: Dict[str, Any]
@@ -164,43 +167,39 @@ RULES:
     async def generate_scene_image(
         self, input_image_base64: str, prompt: str, settings: Dict[str, Any]
     ) -> str:
-        """Generate product image with different background/scene (via Emergent Nano Banana).
+        """Generate product image with different background/scene using Pollinations.ai.
         
         Returns base64 string (no data URL prefix).
         """
-        if not EMERGENT_LLM_KEY:
-            raise NoAPIKeyError(
-                "Image generation requires EMERGENT_LLM_KEY in backend/.env"
+        if not self.has_image_generation_configured():
+            raise NoAPIKeyError("Image generation service not configured")
+        
+        # For Pollinations.ai, we generate based on text prompt
+        # Note: Pollinations doesn't support image-to-image directly like Nano Banana
+        # So we enhance the prompt to describe maintaining the product
+        
+        enhanced_prompt = (
+            prompt + " | Product photography, high quality, professional lighting, "
+            "4K resolution, detailed, commercial product image, clean background"
+        )
+        
+        try:
+            # Generate with Pollinations.ai
+            image_base64 = await self.pollinations.generate_with_retry(
+                prompt=enhanced_prompt,
+                width=1024,
+                height=1024,
+                model="flux-realism",  # Best model for product photography
+                enhance=True,
+                max_retries=2
             )
-        
-        # Strip data URL prefix
-        b64 = input_image_base64.split(",", 1)[1] if input_image_base64.startswith("data:") else input_image_base64
-        
-        # Use emergentintegrations for image generation (Nano Banana)
-        chat = LlmChat(
-            api_key=EMERGENT_LLM_KEY,
-            session_id="image-studio",
-            system_message="You are an expert product photographer."
-        )
-        chat.with_model("gemini", IMAGE_MODEL).with_params(modalities=["image", "text"])
-        
-        # Enhanced prompt
-        full_prompt = (
-            prompt
-            + " CRITICAL: Keep the product COMPLETELY UNCHANGED (same shape, colors, "
-            "text, logos, details). Only change the background, environment, and presentation. "
-            "Output a photorealistic, high-resolution image."
-        )
-        
-        msg = UserMessage(text=full_prompt, file_contents=[ImageContent(b64)])
-        _, images = await chat.send_message_multimodal_response(msg)
-        
-        if not images:
-            raise ValueError("No image returned by Nano Banana")
-        
-        logger.info(f"Generated scene image with {IMAGE_MODEL}")
-        
-        return images[0]["data"]  # base64 string
+            
+            logger.info(f"Generated scene image with Pollinations.ai (Flux Realism)")
+            return image_base64
+            
+        except Exception as e:
+            logger.error(f"Pollinations.ai image generation failed: {e}")
+            raise RuntimeError(f"Image generation failed: {str(e)}")
     
     async def generate_seo(
         self, product: Dict[str, Any], settings: Dict[str, Any]
@@ -251,5 +250,7 @@ Return STRICT JSON only."""
             "openrouter": self.openrouter.get_stats(),
             "models": self.model_router.list_models(),
             "prompts_loaded": len(self.prompt_manager.list_available_prompts()),
+            "image_generation_service": self.image_service,
             "image_generation_available": self.has_image_generation_configured(),
+            "pollinations_stats": self.pollinations.get_stats() if self.image_service == "pollinations" else None,
         }
