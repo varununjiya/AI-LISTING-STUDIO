@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -56,28 +56,39 @@ export default function Dashboard() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const load = async () => {
-    setLoading(true);
-    try {
-      const [s, p] = await Promise.all([
-        api.get("/stats"),
-        api.get("/products", { params: { search: search || undefined, status: statusFilter } }),
-      ]);
-      setStats(s.data);
-      setProducts(p.data);
-    } catch {
-      toast.error("Failed to load dashboard");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const load = useCallback(async () => {
+  setLoading(true);
 
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
+  try {
+    const [s, p] = await Promise.all([
+      api.get("/stats"),
+      api.get("/products", {
+        params: {
+          search: search || undefined,
+          status: statusFilter,
+        },
+      }),
+    ]);
+
+    setStats(s.data);
+    setProducts(p.data);
+  } catch {
+    toast.error("Failed to load dashboard");
+  } finally {
+    setLoading(false);
+  }
+}, [search, statusFilter]);
+
   useEffect(() => {
-    const t = setTimeout(load, 300);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line
-  }, [search, statusFilter]);
+  load();
+}, [load]);
+useEffect(() => {
+  const t = setTimeout(() => {
+    load();
+  }, 300);
+
+  return () => clearTimeout(t);
+}, [load]);
 
   const dist = stats?.marketplace_distribution || {};
   const pieData = [
