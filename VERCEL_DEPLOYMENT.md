@@ -68,7 +68,7 @@ MONGO_URL=mongodb+srv://varun:Varun%40db123@cluster0.4zhnyai.mongodb.net/?appNam
 DB_NAME=ai_listing_studio
 
 # OpenRouter API Key
-OPENROUTER_API_KEY_1=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
+OPENROUTER_API_KEY_1=YOUR_OPENROUTER_API_KEY_HERE
 
 # Image Generation Service
 IMAGE_GENERATION_SERVICE=pollinations

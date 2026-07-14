@@ -107,7 +107,7 @@ Environments: ✓ Production ✓ Preview ✓ Development
 
 ```
 Name: OPENROUTER_API_KEY_1
-Value: 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
+Value: YOUR_OPENROUTER_API_KEY_HERE
 Environments: ✓ Production ✓ Preview ✓ Development
 ```
 
