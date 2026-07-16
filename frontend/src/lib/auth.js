@@ -1,6 +1,5 @@
 const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID;
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";
 export function startGoogleLogin() {
   if (!window.google?.accounts?.oauth2) {
     console.error("Google Identity script not loaded yet — try again in a moment.");
