@@ -1,9 +1,10 @@
 import axios from "axios";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+// Use the same origin when no backend URL is provided.
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";
+
 export const API = `${BACKEND_URL}/api`;
 
-// Axios instance — always sends the session cookie for Emergent Google Auth.
 const api = axios.create({
   baseURL: API,
   withCredentials: true,
