@@ -2,28 +2,31 @@
   "version": 2,
   "builds": [
     {
-      "src": "AI-LISTING-STUDIO-main/frontend/package.json",
+      "src": "frontend/package.json",
       "use": "@vercel/static-build",
       "config": {
         "distDir": "build"
       }
     },
     {
-      "src": "AI-LISTING-STUDIO-main/backend/server.py",
+      "src": "backend/server.py",
       "use": "@vercel/python"
     }
   ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/AI-LISTING-STUDIO-main/backend/server.py"
+      "dest": "/backend/server.py"
     },
     {
       "handle": "filesystem"
     },
     {
       "src": "/(.*)",
-      "dest": "/AI-LISTING-STUDIO-main/frontend/build/index.html"
+      "dest": "/frontend/build/index.html"
     }
-  ]
+  ],
+  "env": {
+    "NODE_VERSION": "18"
+  }
 }
