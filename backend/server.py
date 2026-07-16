@@ -45,7 +45,7 @@ logger = logging.getLogger("ecommerce_content_studio")
 app = FastAPI(title="AI Ecommerce Content Studio API")
 api_router = APIRouter(prefix="/api")
 
-EMERGENT_SESSION_URL = "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data"
+
 
 
 # --------------------------------------------------------------------------- #
@@ -157,41 +157,38 @@ async def _get_settings(user_id: str) -> Dict[str, Any]:
 # --------------------------------------------------------------------------- #
 # Auth routes
 # --------------------------------------------------------------------------- #
-@api_router.post("/auth/session")
-async def create_session(request: Request, response: Response):
-    session_id = request.headers.get("X-Session-ID")
-    if not session_id:
-        body = await request.json()
-        session_id = body.get("session_id")
-    if not session_id:
-        raise HTTPException(status_code=400, detail="Missing session_id")
+@api_router.post("/auth/google")
+async def google_login(payload: Dict[str, Any], response: Response):
+    access_token = payload.get("access_token")
+    if not access_token:
+        raise HTTPException(status_code=400, detail="Missing access_token")
 
     async with httpx.AsyncClient() as hc:
-        resp = await hc.get(EMERGENT_SESSION_URL, headers={"X-Session-ID": session_id})
+        resp = await hc.get(
+            "https://www.googleapis.com/oauth2/v3/userinfo",
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
     if resp.status_code != 200:
-        raise HTTPException(status_code=401, detail="Invalid session_id")
+        raise HTTPException(status_code=401, detail="Invalid Google token")
     data = resp.json()
 
     email = data["email"]
+    name = data.get("name", "")
+    picture = data.get("picture", "")
+
     existing = await db.users.find_one({"email": email}, {"_id": 0})
     if existing:
         user_id = existing["user_id"]
-        await db.users.update_one(
-            {"user_id": user_id},
-            {"$set": {"name": data.get("name"), "picture": data.get("picture")}},
-        )
+        await db.users.update_one({"user_id": user_id}, {"$set": {"name": name, "picture": picture}})
     else:
         user_id = f"user_{uuid.uuid4().hex[:12]}"
         await db.users.insert_one({
-            "user_id": user_id,
-            "email": email,
-            "name": data.get("name", ""),
-            "picture": data.get("picture", ""),
+            "user_id": user_id, "email": email, "name": name, "picture": picture,
             "created_at": _now(),
         })
         await db.settings.insert_one({"user_id": user_id, **SettingsModel().model_dump()})
 
-    session_token = data["session_token"]
+    session_token = str(uuid.uuid4())
     expires_at = datetime.now(timezone.utc) + timedelta(days=7)
     await db.user_sessions.update_one(
         {"session_token": session_token},
@@ -203,7 +200,6 @@ async def create_session(request: Request, response: Response):
         }},
         upsert=True,
     )
-
     response.set_cookie(
         key="session_token", value=session_token, httponly=True, secure=True,
         samesite="none", path="/", max_age=7 * 24 * 60 * 60,
