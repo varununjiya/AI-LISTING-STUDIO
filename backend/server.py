@@ -951,10 +951,19 @@ async def root():
 
 app.include_router(api_router)
 
+from fastapi.middleware.cors import CORSMiddleware
+import os
+
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://ailisting-studio.vercel.app")
+
 app.add_middleware(
     CORSMiddleware,
+    allow_origins=[
+        FRONTEND_URL,
+        "http://localhost:3000",
+        "http://localhost:5173",
+    ],
     allow_credentials=True,
-    allow_origin_regex=".*",
     allow_methods=["*"],
     allow_headers=["*"],
 )
