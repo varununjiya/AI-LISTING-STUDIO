@@ -18,7 +18,7 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 
 logger = logging.getLogger("ai_manager")
 
-IMAGE_GENERATION_SERVICE = os.environ.get("IMAGE_GENERATION_SERVICE", "pollinations")
+IMAGE_GENERATION_SERVICE = "huggingface"
 
 
 class NoAPIKeyError(Exception):
@@ -44,11 +44,8 @@ class AIManager:
         except ORNoAPIKeyError:
             return False
     
-    def has_image_generation_configured(self) -> bool:
-        """Check if image generation is configured."""
-        if self.image_service == "pollinations":
-            return True  # Pollinations is always available (no API key needed)
-        return False
+   def has_image_generation_configured(self) -> bool:
+    return True
     
     async def generate_listing(
         self, product: Dict[str, Any], settings: Dict[str, Any]
@@ -163,43 +160,53 @@ RULES:
         logger.info(f"Analyzed image with {metadata['model']}")
         
         return validated_attrs
-    
     async def generate_scene_image(
-        self, input_image_base64: str, prompt: str, settings: Dict[str, Any]
-    ) -> str:
-        """Generate product image with different background/scene using Pollinations.ai.
-        
-        Returns base64 string (no data URL prefix).
-        """
-        if not self.has_image_generation_configured():
-            raise NoAPIKeyError("Image generation service not configured")
-        
-        # For Pollinations.ai, we generate based on text prompt
-        # Note: Pollinations doesn't support image-to-image directly like Nano Banana
-        # So we enhance the prompt to describe maintaining the product
-        
-        enhanced_prompt = (
-            prompt + " | Product photography, high quality, professional lighting, "
-            "4K resolution, detailed, commercial product image, clean background"
+    self,
+    input_image_base64: str,
+    prompt: str,
+    settings: Dict[str, Any],
+) -> str:
+    """
+    Generate an AI product image using Hugging Face FLUX.
+    """
+
+    if not self.has_image_generation_configured():
+        raise NoAPIKeyError("HF_TOKEN not configured")
+
+    enhanced_prompt = f"""
+Professional ecommerce product photography.
+
+{prompt}
+
+Requirements:
+- Keep the product exactly the same.
+- Preserve product shape, color and branding.
+- White premium studio background.
+- Amazon listing quality.
+- Ultra realistic.
+- Soft studio lighting.
+- Commercial photography.
+- High detail.
+- 8K.
+- No text.
+- No watermark.
+"""
+
+    try:
+        image_base64 = await self.pollinations.generate_with_retry(
+            prompt=enhanced_prompt,
+            width=1024,
+            height=1024,
+            max_retries=3,
         )
-        
-        try:
-            # Generate with Pollinations.ai
-            image_base64 = await self.pollinations.generate_with_retry(
-                prompt=enhanced_prompt,
-                width=1024,
-                height=1024,
-                model="flux-realism",  # Best model for product photography
-                enhance=True,
-                max_retries=2
-            )
-            
-            logger.info(f"Generated scene image with Pollinations.ai (Flux Realism)")
-            return image_base64
-            
-        except Exception as e:
-            logger.error(f"Pollinations.ai image generation failed: {e}")
-            raise RuntimeError(f"Image generation failed: {str(e)}")
+
+        logger.info("Generated image using Hugging Face FLUX")
+
+        return image_base64
+
+    except Exception as e:
+        logger.exception(e)
+        raise RuntimeError(f"Image generation failed: {e}")
     
     async def generate_seo(
         self, product: Dict[str, Any], settings: Dict[str, Any]
@@ -244,13 +251,13 @@ Return STRICT JSON only."""
         
         return validated_seo
     
-    def get_stats(self) -> Dict[str, Any]:
-        """Get AI service statistics."""
-        return {
-            "openrouter": self.openrouter.get_stats(),
-            "models": self.model_router.list_models(),
-            "prompts_loaded": len(self.prompt_manager.list_available_prompts()),
-            "image_generation_service": self.image_service,
-            "image_generation_available": self.has_image_generation_configured(),
-            "pollinations_stats": self.pollinations.get_stats() if self.image_service == "pollinations" else None,
-        }
+   def get_stats(self) -> Dict[str, Any]:
+    """Get AI service statistics."""
+    return {
+        "openrouter": self.openrouter.get_stats(),
+        "models": self.model_router.list_models(),
+        "prompts_loaded": len(self.prompt_manager.list_available_prompts()),
+        "image_generation_service": self.image_service,
+        "image_generation_available": self.has_image_generation_configured(),
+        "image_generation_stats": self.pollinations.get_stats(),
+    }
