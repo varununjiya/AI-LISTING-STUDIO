@@ -44,9 +44,19 @@ class GeminiService:
             except Exception as e:
                 logger.warning(f"Could not initialize google-genai SDK: {e}. Will use REST API fallback.")
 
+    def get_api_key(self) -> str:
+        """Retrieve API key dynamically from environment."""
+        return (
+            os.getenv("GEMINI_API_KEY")
+            or os.getenv("GOOGLE_API_KEY")
+            or self.api_key
+            or ""
+        ).strip()
+
     def is_configured(self) -> bool:
         """Check if Gemini API Key is configured."""
-        return bool(self.api_key)
+        return bool(self.get_api_key())
+
 
     def _clean_base64(self, b64_str: str) -> str:
         """Strip data URL scheme prefix if present."""
@@ -80,8 +90,9 @@ class GeminiService:
         if not prompt:
             raise ValueError("Prompt cannot be empty")
 
-        if not self.api_key:
-            logger.warning("GEMINI_API_KEY is not set. Falling back to Pollinations / HuggingFace service.")
+        api_key = self.get_api_key()
+        if not api_key:
+            logger.warning("GEMINI_API_KEY is not set. Falling back to Pollinations / FLUX service.")
             from .pollinations_service import get_pollinations_service
             pollinations = get_pollinations_service()
             return await pollinations.generate_image(
@@ -98,6 +109,13 @@ class GeminiService:
         clean_b64 = self._clean_base64(input_image_base64) if input_image_base64 else None
 
         # Approach 1: Try google-genai SDK if initialized
+        if self.genai_client is None and api_key:
+            try:
+                from google import genai
+                self.genai_client = genai.Client(api_key=api_key)
+            except Exception as e:
+                logger.warning(f"Could not initialize google-genai SDK at runtime: {e}")
+
         if self.genai_client is not None:
             try:
                 from google.genai import types
@@ -170,7 +188,8 @@ class GeminiService:
                 logger.warning(f"Google GenAI SDK call failed: {e}. Trying REST API fallback...")
 
         # Approach 2: Direct REST API call to Google Generative Language API (Imagen 3 / Gemini)
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:predict?key={self.api_key}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:predict?key={api_key}"
+
         
         instance_data = {"prompt": prompt}
         if clean_b64:

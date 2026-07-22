@@ -1,43 +1,23 @@
-"""Hugging Face FLUX Image Generation Service."""
+"""Pollinations.ai Image Generation Service (FREE Unlimited FLUX)."""
 from __future__ import annotations
 
-import os
 import io
 import base64
 import logging
+import urllib.parse
 import asyncio
-from typing import Optional
-from pathlib import Path
+from typing import Optional, Dict, Any
+import httpx
 
-from dotenv import load_dotenv
-try:
-    from huggingface_hub import InferenceClient
-except ImportError:
-    InferenceClient = None
-
-load_dotenv(Path(__file__).parent.parent / ".env")
-
-logger = logging.getLogger("huggingface_service")
+logger = logging.getLogger("pollinations_service")
 
 
-class HuggingFaceService:
-    """Hugging Face FLUX image generation service."""
+class PollinationsService:
+    """Pollinations.ai FREE FLUX image generation service."""
 
     def __init__(self):
         self.request_count = 0
-        if InferenceClient is not None:
-            self.client = InferenceClient(
-                provider="hf-inference",
-                api_key=os.getenv("HF_TOKEN"),
-            )
-        else:
-            self.client = None
-
-
-        self.model = os.getenv(
-            "HF_MODEL",
-            "black-forest-labs/FLUX.1-schnell",
-        )
+        self.api_url = "https://image.pollinations.ai/prompt/"
 
     async def generate_image(
         self,
@@ -48,104 +28,68 @@ class HuggingFaceService:
         timeout: int = 120,
         **kwargs,
     ) -> str:
-
         """
-        Generate an image using Hugging Face FLUX.
+        Generate an image using Pollinations.ai FLUX (Free API).
 
         Returns:
-            Base64 encoded PNG image.
+            Base64 encoded PNG image string.
         """
-
         prompt = prompt.strip()
-
         if not prompt:
             raise ValueError("Prompt cannot be empty")
 
-        logger.info(f"Generating image with {self.model}")
+        encoded_prompt = urllib.parse.quote(prompt)
+        url = f"{self.api_url}{encoded_prompt}?width={width}&height={height}&nologo=true&model=flux"
 
-        try:
+        logger.info(f"Generating image via Pollinations.ai FLUX: {prompt[:60]}...")
 
-            image = await asyncio.wait_for(
-                asyncio.to_thread(
-                    self.client.text_to_image,
-                    prompt=prompt,
-                    model=self.model,
-                ),
-                timeout=timeout,
-            )
+        async with httpx.AsyncClient(timeout=float(timeout), follow_redirects=True) as client:
+            resp = await client.get(url)
+            if resp.status_code == 200 and resp.content:
+                image_base64 = base64.b64encode(resp.content).decode("utf-8")
+                self.request_count += 1
+                logger.info(f"Successfully generated Pollinations image #{self.request_count}")
+                return image_base64
 
-            buffer = io.BytesIO()
-            image.save(buffer, format="PNG")
-
-            image_base64 = base64.b64encode(
-                buffer.getvalue()
-            ).decode("utf-8")
-
-            self.request_count += 1
-
-            logger.info(
-                f"Successfully generated image #{self.request_count}"
-            )
-
-            return image_base64
-
-        except asyncio.TimeoutError:
-            logger.error("Image generation timed out.")
-            raise RuntimeError("Image generation timed out.")
-
-        except Exception as e:
-            logger.exception(e)
-            raise RuntimeError(f"Hugging Face API Error: {str(e)}")
+            raise RuntimeError(f"Pollinations API Error ({resp.status_code}): {resp.text[:200]}")
 
     async def generate_with_retry(
         self,
         prompt: str,
+        input_image_base64: Optional[str] = None,
         max_retries: int = 3,
         **kwargs,
     ) -> str:
-
         last_error = None
-
         for attempt in range(max_retries):
             try:
                 return await self.generate_image(
                     prompt=prompt,
-                    **kwargs,
+                    input_image_base64=input_image_base64,
+                    **kwargs
                 )
-
             except Exception as e:
                 last_error = e
-
                 if attempt < max_retries - 1:
                     wait = 2 ** attempt
-                    logger.warning(
-                        f"Retry {attempt + 1}/{max_retries} after {wait}s..."
-                    )
+                    logger.warning(f"Pollinations Retry {attempt + 1}/{max_retries} after {wait}s...")
                     await asyncio.sleep(wait)
 
-        raise RuntimeError(last_error)
+        raise RuntimeError(f"Pollinations image generation failed after retries: {last_error}")
 
-    def get_stats(self):
-
+    def get_stats(self) -> Dict[str, Any]:
         return {
-            "service": "Hugging Face",
-            "model": self.model,
+            "service": "Pollinations.ai (FLUX)",
+            "model": "flux",
             "requests": self.request_count,
         }
 
 
-_huggingface_service: Optional[HuggingFaceService] = None
+_pollinations_service: Optional[PollinationsService] = None
 
 
-def get_pollinations_service():
-    """
-    Keeping the same function name so
-    the rest of your project doesn't need changes.
-    """
-
-    global _huggingface_service
-
-    if _huggingface_service is None:
-        _huggingface_service = HuggingFaceService()
-
-    return _huggingface_service
+def get_pollinations_service() -> PollinationsService:
+    global _pollinations_service
+    if _pollinations_service is None:
+        _pollinations_service = PollinationsService()
+    return _pollinations_service
