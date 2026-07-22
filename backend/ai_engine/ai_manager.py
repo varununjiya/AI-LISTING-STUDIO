@@ -174,45 +174,52 @@ RULES:
         """
         service = (settings.get("image_service") or self.image_service or "gemini").lower()
 
-        enhanced_prompt = f"""
-Professional ecommerce product photography.
+        bg_prompt = f"""
+Professional commercial product studio background.
 
 {prompt}
 
 Requirements:
-- Keep the product exactly the same.
-- Preserve product shape, color and branding.
-- White premium studio background.
-- Amazon listing quality.
-- Ultra realistic.
-- Soft studio lighting.
-- Commercial photography.
-- High detail.
-- 8K.
-- No text.
-- No watermark.
+- Clean studio environment background.
+- Soft, natural commercial lighting.
+- Amazon ecommerce listing style.
+- High detail, 8K, realistic depth of field.
+- Empty space in center for product placement.
+- No text, no watermark.
 """
 
         try:
+            # 1. Generate the studio/lifestyle AI scene background
             if service == "gemini" or self.gemini.is_configured():
-                logger.info("Generating img2img scene using Google Gemini (Imagen 3)...")
-                image_base64 = await self.gemini.generate_with_retry(
-                    prompt=enhanced_prompt,
+                logger.info("Generating AI background scene using Google Gemini...")
+                scene_base64 = await self.gemini.generate_with_retry(
+                    prompt=bg_prompt,
                     input_image_base64=input_image_base64,
                     max_retries=3,
                 )
             else:
-                logger.info(f"Generating img2img scene using {service}...")
-                image_base64 = await self.pollinations.generate_with_retry(
-                    prompt=enhanced_prompt,
+                logger.info(f"Generating AI background scene using {service}...")
+                scene_base64 = await self.pollinations.generate_with_retry(
+                    prompt=bg_prompt,
                     input_image_base64=input_image_base64,
                     width=1024,
                     height=1024,
                     max_retries=3,
                 )
 
+            # 2. Extract exact product cutout and composite onto the AI scene
+            if input_image_base64:
+                try:
+                    from .product_compositor import extract_product_cutout, composite_product_on_scene
+                    logger.info("Extracting exact product cutout and compositing onto AI scene...")
+                    product_cutout = extract_product_cutout(input_image_base64)
+                    final_b64 = composite_product_on_scene(product_cutout, scene_base64)
+                    return final_b64
+                except Exception as comp_err:
+                    logger.warning(f"Product compositing warning: {comp_err}. Returning AI scene.")
 
-            return image_base64
+            return scene_base64
+
 
         except Exception as e:
             logger.exception(e)
