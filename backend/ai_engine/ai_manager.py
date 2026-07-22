@@ -13,12 +13,13 @@ from .model_router import ModelRouter
 from .prompt_manager import PromptManager
 from .response_formatter import ResponseFormatter
 from .pollinations_service import get_pollinations_service
+from .gemini_service import get_gemini_service
 
 load_dotenv(Path(__file__).parent.parent / ".env")
 
 logger = logging.getLogger("ai_manager")
 
-IMAGE_GENERATION_SERVICE = "huggingface"
+IMAGE_GENERATION_SERVICE = os.getenv("IMAGE_GENERATION_SERVICE", "gemini").lower()
 
 
 class NoAPIKeyError(Exception):
@@ -26,7 +27,7 @@ class NoAPIKeyError(Exception):
 
 
 class AIManager:
-    """Central AI orchestrator using OpenRouter for text/vision and Pollinations for images."""
+    """Central AI orchestrator using OpenRouter for text/vision and Gemini/Pollinations for images."""
 
     def __init__(self):
         self.openrouter = OpenRouterService()
@@ -34,6 +35,7 @@ class AIManager:
         self.prompt_manager = PromptManager()
         self.formatter = ResponseFormatter()
         self.pollinations = get_pollinations_service()
+        self.gemini = get_gemini_service()
         self.image_service = IMAGE_GENERATION_SERVICE
     
     def has_openrouter_configured(self) -> bool:
@@ -44,8 +46,9 @@ class AIManager:
         except ORNoAPIKeyError:
             return False
     
-   def has_image_generation_configured(self) -> bool:
-    return True
+    def has_image_generation_configured(self) -> bool:
+        return True
+
     
     async def generate_listing(
         self, product: Dict[str, Any], settings: Dict[str, Any]
@@ -161,19 +164,17 @@ RULES:
         
         return validated_attrs
     async def generate_scene_image(
-    self,
-    input_image_base64: str,
-    prompt: str,
-    settings: Dict[str, Any],
-) -> str:
-    """
-    Generate an AI product image using Hugging Face FLUX.
-    """
+        self,
+        input_image_base64: str,
+        prompt: str,
+        settings: Dict[str, Any],
+    ) -> str:
+        """
+        Generate an AI product image using Gemini (Imagen 3) or fallback service.
+        """
+        service = (settings.get("image_service") or self.image_service or "gemini").lower()
 
-    if not self.has_image_generation_configured():
-        raise NoAPIKeyError("HF_TOKEN not configured")
-
-    enhanced_prompt = f"""
+        enhanced_prompt = f"""
 Professional ecommerce product photography.
 
 {prompt}
@@ -192,22 +193,31 @@ Requirements:
 - No watermark.
 """
 
-    try:
-        image_base64 = await self.pollinations.generate_with_retry(
-            prompt=enhanced_prompt,
-            width=1024,
-            height=1024,
-            max_retries=3,
-        )
+        try:
+            if service == "gemini" or self.gemini.is_configured():
+                logger.info("Generating img2img scene using Google Gemini (Imagen 3)...")
+                image_base64 = await self.gemini.generate_with_retry(
+                    prompt=enhanced_prompt,
+                    input_image_base64=input_image_base64,
+                    max_retries=3,
+                )
+            else:
+                logger.info(f"Generating img2img scene using {service}...")
+                image_base64 = await self.pollinations.generate_with_retry(
+                    prompt=enhanced_prompt,
+                    input_image_base64=input_image_base64,
+                    width=1024,
+                    height=1024,
+                    max_retries=3,
+                )
 
-        logger.info("Generated image using Hugging Face FLUX")
 
-        return image_base64
+            return image_base64
 
-    except Exception as e:
-        logger.exception(e)
-        raise RuntimeError(f"Image generation failed: {e}")
-    
+        except Exception as e:
+            logger.exception(e)
+            raise RuntimeError(f"Image generation failed: {e}")
+
     async def generate_seo(
         self, product: Dict[str, Any], settings: Dict[str, Any]
     ) -> Dict[str, Any]:
@@ -250,14 +260,16 @@ Return STRICT JSON only."""
         logger.info(f"Generated SEO with {metadata['model']}")
         
         return validated_seo
-    
-   def get_stats(self) -> Dict[str, Any]:
-    """Get AI service statistics."""
-    return {
-        "openrouter": self.openrouter.get_stats(),
-        "models": self.model_router.list_models(),
-        "prompts_loaded": len(self.prompt_manager.list_available_prompts()),
-        "image_generation_service": self.image_service,
-        "image_generation_available": self.has_image_generation_configured(),
-        "image_generation_stats": self.pollinations.get_stats(),
-    }
+
+    def get_stats(self) -> Dict[str, Any]:
+        """Get AI service statistics."""
+        return {
+            "openrouter": self.openrouter.get_stats(),
+            "models": self.model_router.list_models(),
+            "prompts_loaded": len(self.prompt_manager.list_available_prompts()),
+            "image_generation_service": self.image_service,
+            "image_generation_available": self.has_image_generation_configured(),
+            "gemini_stats": self.gemini.get_stats(),
+            "pollinations_stats": self.pollinations.get_stats(),
+        }
+

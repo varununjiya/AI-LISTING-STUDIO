@@ -10,7 +10,10 @@ from typing import Optional
 from pathlib import Path
 
 from dotenv import load_dotenv
-from huggingface_hub import InferenceClient
+try:
+    from huggingface_hub import InferenceClient
+except ImportError:
+    InferenceClient = None
 
 load_dotenv(Path(__file__).parent.parent / ".env")
 
@@ -22,11 +25,14 @@ class HuggingFaceService:
 
     def __init__(self):
         self.request_count = 0
+        if InferenceClient is not None:
+            self.client = InferenceClient(
+                provider="hf-inference",
+                api_key=os.getenv("HF_TOKEN"),
+            )
+        else:
+            self.client = None
 
-        self.client = InferenceClient(
-            provider="hf-inference",
-            api_key=os.getenv("HF_TOKEN"),
-        )
 
         self.model = os.getenv(
             "HF_MODEL",
@@ -36,11 +42,13 @@ class HuggingFaceService:
     async def generate_image(
         self,
         prompt: str,
+        input_image_base64: Optional[str] = None,
         width: int = 1024,
         height: int = 1024,
         timeout: int = 120,
         **kwargs,
     ) -> str:
+
         """
         Generate an image using Hugging Face FLUX.
 
