@@ -213,10 +213,16 @@ Requirements:
                     from .product_compositor import extract_product_cutout, composite_product_on_scene
                     logger.info("Extracting exact product cutout and compositing onto AI scene...")
                     product_cutout = extract_product_cutout(input_image_base64)
-                    final_b64 = composite_product_on_scene(product_cutout, scene_base64)
+                    is_white = "pure white" in prompt.lower() or "#ffffff" in prompt.lower() or "amazon white" in prompt.lower()
+                    final_b64 = composite_product_on_scene(
+                        product_cutout,
+                        scene_base64,
+                        is_pure_white_bg=is_white
+                    )
                     return final_b64
                 except Exception as comp_err:
                     logger.warning(f"Product compositing warning: {comp_err}. Returning AI scene.")
+
 
             return scene_base64
 
