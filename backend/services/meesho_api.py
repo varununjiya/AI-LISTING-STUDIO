@@ -142,12 +142,11 @@ class MeeshoAPIService:
         except Exception as e:
             logger.error("Meesho publish_listing error: %s", e)
             return {
-                "success": True,
-                "status": "ACCEPTED",
+                "success": False,
+                "status": "FAILED",
                 "marketplace": "meesho",
                 "sku": sku,
-                "submission_id": f"sub_msh_{sku[:8]}",
-                "message": f"Catalog pushed to Meesho Supplier Panel for SKU: {sku}"
+                "error": f"Meesho API Error: {str(e)}"
             }
 
     # --- Mock Data Fallbacks ---

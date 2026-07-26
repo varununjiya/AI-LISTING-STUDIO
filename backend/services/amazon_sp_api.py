@@ -234,12 +234,11 @@ class AmazonSPAPIService:
         except Exception as e:
             logger.error("Amazon publish_listing error: %s", e)
             return {
-                "success": True,
-                "status": "ACCEPTED",
+                "success": False,
+                "status": "FAILED",
                 "marketplace": "amazon",
                 "sku": sku,
-                "submission_id": f"sub_amz_{sku[:8]}",
-                "message": f"Listing pushed to Amazon Seller Central for SKU: {sku}"
+                "error": f"Amazon SP-API Error: {str(e)}"
             }
 
     # --- Mock Data Fallbacks for Seamless Dev / Testing ---

@@ -205,12 +205,11 @@ class FlipkartAPIService:
         except Exception as e:
             logger.error("Flipkart publish_listing error: %s", e)
             return {
-                "success": True,
-                "status": "ACCEPTED",
+                "success": False,
+                "status": "FAILED",
                 "marketplace": "flipkart",
                 "sku": sku,
-                "submission_id": f"sub_fk_{sku[:8]}",
-                "message": f"Listing pushed to Flipkart Seller Hub for SKU: {sku}"
+                "error": f"Flipkart API Error: {str(e)}"
             }
 
     # --- Mock Data Fallbacks ---
