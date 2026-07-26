@@ -98,7 +98,7 @@ export default function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [load]);
 
-  const catChartData = Object.entries(stats?.by_category || {})
+  const pieData = Object.entries(stats?.by_category || {})
     .map(([name, value]) => ({ name: name.length > 10 ? name.slice(0, 10) + "…" : name, value }))
     .slice(0, 6);
 
