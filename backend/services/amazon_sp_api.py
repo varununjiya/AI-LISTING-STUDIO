@@ -184,18 +184,34 @@ class AmazonSPAPIService:
 
             url = f"{SP_API_ENDPOINT}/listings/2021-08-01/items/{self.seller_id}/{sku}"
             headers = {"x-amz-access-token": token, "Content-Type": "application/json"}
+            
+            bullets = listing_data.get("amazon_bullets") or listing_data.get("features") or []
+            if isinstance(bullets, str):
+                bullets = [b.strip() for b in bullets.split("\n") if b.strip()]
+
+            keywords = listing_data.get("amazon_backend_keywords") or listing_data.get("amazon_search_terms") or ""
+            images = listing_data.get("images", [])
+
+            attributes = {
+                "item_name": [{"value": listing_data.get("amazon_title") or listing_data.get("product_name"), "language_tag": "en_IN"}],
+                "bullet_point": [{"value": b, "language_tag": "en_IN"} for b in bullets[:5]],
+                "product_description": [{"value": listing_data.get("amazon_description", ""), "language_tag": "en_IN"}],
+                "generic_keyword": [{"value": keywords, "language_tag": "en_IN"}] if keywords else [],
+                "purchasable_offer": [{
+                    "currency": "INR",
+                    "our_price": [{"schedule": [{"value_with_tax": float(listing_data.get("selling_price", 499))}]}]
+                }],
+            }
+
+            if images:
+                attributes["main_product_image_locator"] = [{"media_location": images[0]}]
+                if len(images) > 1:
+                    attributes["other_product_image_locator"] = [{"media_location": img} for img in images[1:8]]
+
             payload = {
                 "productType": listing_data.get("product_type", "PRODUCT"),
                 "requirements": "LISTING",
-                "attributes": {
-                    "item_name": [{"value": listing_data.get("amazon_title") or listing_data.get("product_name"), "language_tag": "en_IN"}],
-                    "bullet_point": [{"value": b} for b in listing_data.get("amazon_bullets", [])],
-                    "product_description": [{"value": listing_data.get("amazon_description", ""), "language_tag": "en_IN"}],
-                    "purchasable_offer": [{
-                        "currency": "INR",
-                        "our_price": [{"schedule": [{"value_with_tax": float(listing_data.get("selling_price", 499))}]}]
-                    }],
-                }
+                "attributes": attributes
             }
             async with httpx.AsyncClient() as client:
                 resp = await client.put(url, headers=headers, json=payload, timeout=15.0)

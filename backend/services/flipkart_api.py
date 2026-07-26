@@ -168,11 +168,20 @@ class FlipkartAPIService:
 
             url = f"{FLIPKART_API_BASE}/v3/listings"
             headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+            
+            highlights = listing_data.get("flipkart_highlights") or listing_data.get("features") or ""
+            if isinstance(highlights, str):
+                highlights = [h.strip() for h in highlights.split("\n") if h.strip()]
+
             payload = {
                 "skuId": sku,
                 "productTitle": listing_data.get("flipkart_title") or listing_data.get("product_name"),
                 "description": listing_data.get("flipkart_description") or listing_data.get("amazon_description"),
+                "highlights": highlights,
+                "searchKeywords": listing_data.get("flipkart_search_keywords") or listing_data.get("keywords"),
                 "price": float(listing_data.get("selling_price", 499)),
+                "mrp": float(listing_data.get("mrp", listing_data.get("selling_price", 999))),
+                "images": listing_data.get("images", []),
             }
             async with httpx.AsyncClient() as client:
                 resp = await client.put(url, headers=headers, json=payload, timeout=15.0)

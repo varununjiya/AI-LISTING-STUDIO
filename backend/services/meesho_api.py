@@ -108,11 +108,24 @@ class MeeshoAPIService:
 
             url = f"{MEESHO_API_BASE}/supplier/product/v1/create"
             headers = {"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"}
+            
+            highlights = listing_data.get("meesho_highlights") or listing_data.get("features") or ""
+            if isinstance(highlights, str):
+                highlights = [h.strip() for h in highlights.split("\n") if h.strip()]
+
+            tags = listing_data.get("meesho_tags") or listing_data.get("keywords") or ""
+            if isinstance(tags, str):
+                tags = [t.strip() for t in tags.split(",") if t.strip()]
+
             payload = {
                 "sku": sku,
                 "product_name": listing_data.get("meesho_title") or listing_data.get("product_name"),
-                "price": float(listing_data.get("selling_price", 499)),
                 "description": listing_data.get("meesho_description") or listing_data.get("amazon_description"),
+                "highlights": highlights,
+                "tags": tags,
+                "price": float(listing_data.get("selling_price", 499)),
+                "mrp": float(listing_data.get("mrp", listing_data.get("selling_price", 999))),
+                "images": listing_data.get("images", []),
             }
             async with httpx.AsyncClient() as client:
                 resp = await client.post(url, headers=headers, json=payload, timeout=15.0)
