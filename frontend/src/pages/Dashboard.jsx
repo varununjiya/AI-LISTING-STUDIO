@@ -98,9 +98,10 @@ export default function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [load]);
 
-  const pieData = Object.entries(stats?.by_category || {})
+  const catData = Object.entries(stats?.by_category || {})
     .map(([name, value]) => ({ name: name.length > 10 ? name.slice(0, 10) + "…" : name, value }))
     .slice(0, 6);
+  const pieData = catData;
 
   const monthlyData = (stats?.monthly_trends || []).map(m => ({
     month: m.month ? new Date(m.month + "-01").toLocaleDateString('en-US', { month: 'short' }) : "",
