@@ -39,7 +39,7 @@ class AmazonSPAPIService:
         region: str = "fe",  # Far East / India (amazon.in) by default
     ):
         self.client_id = client_id or os.getenv("AMAZON_CLIENT_ID", "")
-        self.client_secret = client_secret or os.getenv("AMAZON_CLIENT_SECRET", "")
+        self.client_secret = decrypt_token(client_secret) if client_secret else os.getenv("AMAZON_CLIENT_SECRET", "")
         self.refresh_token = decrypt_token(refresh_token) if refresh_token else os.getenv("AMAZON_REFRESH_TOKEN", "")
         self.seller_id = seller_id or os.getenv("AMAZON_SELLER_ID", "")
         self.region = region

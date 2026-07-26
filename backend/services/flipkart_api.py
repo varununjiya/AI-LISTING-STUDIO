@@ -35,7 +35,7 @@ class FlipkartAPIService:
         refresh_token: Optional[str] = None,
     ):
         self.app_id = app_id or os.getenv("FLIPKART_APP_ID", "")
-        self.app_secret = app_secret or os.getenv("FLIPKART_APP_SECRET", "")
+        self.app_secret = decrypt_token(app_secret) if app_secret else os.getenv("FLIPKART_APP_SECRET", "")
         self.refresh_token = decrypt_token(refresh_token) if refresh_token else os.getenv("FLIPKART_REFRESH_TOKEN", "")
         self.access_token: Optional[str] = None
         self.token_expires_at: Optional[datetime] = None
