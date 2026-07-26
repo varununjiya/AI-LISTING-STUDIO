@@ -67,6 +67,23 @@ class SubscriptionService:
 
     async def get_user_subscription(self, user_id: str) -> Dict[str, Any]:
         """Fetch active user subscription or default to Free Plan."""
+        # Check if user's email is listed in ADMIN_EMAILS environment variable
+        admin_emails = [e.strip().lower() for e in os.getenv("ADMIN_EMAILS", "").split(",") if e.strip()]
+        if admin_emails:
+            user_doc = await self.db.users.find_one({"id": user_id}, {"_id": 0, "email": 1})
+            if user_doc and user_doc.get("email", "").lower() in admin_emails:
+                return {
+                    "user_id": user_id,
+                    "plan_id": "yearly_pro",
+                    "plan_name": "Pro Plan (VIP Admin)",
+                    "status": "active",
+                    "limit": -1,
+                    "is_unlimited": True,
+                    "priority_queue": True,
+                    "analytics": True,
+                    "current_period_end": None,
+                }
+
         sub = await self.db.subscriptions.find_one({"user_id": user_id, "status": "active"}, {"_id": 0})
         now = datetime.now(timezone.utc)
 
