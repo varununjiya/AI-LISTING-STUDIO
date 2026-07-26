@@ -128,8 +128,6 @@ RULES:
         self, section: str, product: Dict[str, Any], settings: Dict[str, Any]
     ) -> Any:
         """Regenerate a single listing section."""
-        # For now, regenerate the full listing and extract the section
-        # TODO: Optimize to generate only the requested section
         full_listing = await self.generate_listing(product, settings)
         return full_listing.get(section)
     
