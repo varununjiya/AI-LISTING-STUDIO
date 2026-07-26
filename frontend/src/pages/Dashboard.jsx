@@ -21,6 +21,8 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import MarketplaceCards from "@/components/MarketplaceCards";
+import ConnectMarketplaceModal from "@/components/ConnectMarketplaceModal";
 
 const STATUS_STYLE = {
   draft: "bg-secondary text-secondary-foreground",
@@ -52,52 +54,83 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [products, setProducts] = useState([]);
+  const [mpDashboard, setMpDashboard] = useState(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [connectModalMp, setConnectModalMp] = useState(null);
+
+  const loadMarketplaceDashboard = useCallback(async () => {
+    try {
+      const res = await api.get("/marketplaces/dashboard");
+      setMpDashboard(res.data);
+    } catch (e) {
+      console.error("Failed to load marketplace dashboard", e);
+    }
+  }, []);
 
   const load = useCallback(async () => {
-  setLoading(true);
+    setLoading(true);
 
-  try {
-    const [s, p] = await Promise.all([
-      api.get("/stats"),
-      api.get("/products", {
-        params: {
-          search: search || undefined,
-          status: statusFilter,
-        },
-      }),
-    ]);
+    try {
+      const [s, p] = await Promise.all([
+        api.get("/stats"),
+        api.get("/products", {
+          params: {
+            search: search || undefined,
+            status: statusFilter,
+          },
+        }),
+      ]);
 
-    setStats(s.data);
-    setProducts(p.data);
-  } catch {
-    toast.error("Failed to load dashboard");
-  } finally {
-    setLoading(false);
-  }
-}, [search, statusFilter]);
+      setStats(s.data);
+      setProducts(p.data);
+      await loadMarketplaceDashboard();
+    } catch {
+      toast.error("Failed to load dashboard");
+    } finally {
+      setLoading(false);
+    }
+  }, [search, statusFilter, loadMarketplaceDashboard]);
 
   useEffect(() => {
-  load();
-}, [load]);
-useEffect(() => {
-  const t = setTimeout(() => {
     load();
-  }, 300);
+  }, [load]);
 
-  return () => clearTimeout(t);
-}, [load]);
+  return (
+    <div className="space-y-6" data-testid="dashboard-page">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="font-mono text-xs uppercase tracking-widest text-accent mb-2">Multi-Marketplace SaaS</p>
+          <h1 className="font-heading font-black text-3xl sm:text-4xl tracking-tight">Dashboard</h1>
+        </div>
+        <div className="flex items-center gap-3">
+          <Button
+            onClick={() => navigate("/import-products")}
+            variant="outline"
+            className="rounded-full border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-200"
+          >
+            <Download className="mr-1.5 h-4 w-4 text-indigo-400" /> Import Products
+          </Button>
+          <Button onClick={() => navigate("/products/new")} className="rounded-full font-semibold" data-testid="add-product-btn">
+            <Plus className="mr-1 h-4 w-4" /> Add Product
+          </Button>
+        </div>
+      </div>
 
-  const dist = stats?.marketplace_distribution || {};
-  const pieData = [
-    { name: "Amazon", value: dist.amazon || 0 },
-    { name: "Flipkart", value: dist.flipkart || 0 },
-    { name: "Meesho", value: dist.meesho || 0 },
-  ].filter((d) => d.value > 0);
-
-  const catData = Object.entries(stats?.category_distribution || {})
+      {/* Marketplace Cards Section */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-bold text-slate-200 flex items-center gap-2">
+            <Boxes className="w-5 h-5 text-indigo-400" /> Connected Marketplaces
+          </h2>
+        </div>
+        <MarketplaceCards
+          data={mpDashboard}
+          onConnect={(mp) => setConnectModalMp(mp)}
+          onRefresh={loadMarketplaceDashboard}
+        />
+      </div>
     .map(([name, value]) => ({ name: name.length > 10 ? name.slice(0, 10) + "…" : name, value }))
     .slice(0, 6);
 
@@ -322,8 +355,13 @@ useEffect(() => {
               ))}
             </TableBody>
           </Table>
-        )}
-      </div>
+      {/* Connect Marketplace Modal */}
+      <ConnectMarketplaceModal
+        isOpen={!!connectModalMp}
+        onClose={() => setConnectModalMp(null)}
+        marketplace={connectModalMp}
+        onSuccess={loadMarketplaceDashboard}
+      />
     </div>
   );
 }

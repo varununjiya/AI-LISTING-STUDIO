@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import AIImageStudio from "@/components/AIImageStudio";
+import PushListingModal from "@/components/PushListingModal";
 
 const STATUS_STYLE = {
   draft: "bg-secondary text-secondary-foreground",
@@ -118,6 +119,7 @@ export default function ProductDetails() {
   const [generating, setGenerating] = useState(false);
   const [agentRunning, setAgentRunning] = useState(false);
   const [tab, setTab] = useState(searchParams.get("tab") || "overview");
+  const [pushModalMp, setPushModalMp] = useState(null);
 
   const load = useCallback(async () => {
     try {
@@ -263,40 +265,64 @@ export default function ProductDetails() {
         </TabsContent>
 
         {/* Amazon */}
-        <TabsContent value="amazon" className="mt-6">
+        <TabsContent value="amazon" className="mt-6 space-y-4">
           {!listing ? <EmptyGen onGenerate={handleGenerate} generating={generating} /> : (
-            <div className="grid lg:grid-cols-2 gap-4">
-              <EditableSection title="Amazon Title" sectionKey="amazon_title" value={listing.amazon_title} type="text" limit={200} productId={id} onUpdate={updateListing} />
-              <EditableSection title="Backend Keywords" sectionKey="amazon_backend_keywords" value={listing.amazon_backend_keywords} limit={250} productId={id} onUpdate={updateListing} />
-              <EditableSection title="Bullet Points (5)" sectionKey="amazon_bullets" value={listing.amazon_bullets} productId={id} onUpdate={updateListing} />
-              <EditableSection title="Description" sectionKey="amazon_description" value={listing.amazon_description} limit={2000} productId={id} onUpdate={updateListing} />
-              <EditableSection title="Search Terms" sectionKey="amazon_search_terms" value={listing.amazon_search_terms} productId={id} onUpdate={updateListing} />
-              <EditableSection title="A+ Content Suggestions" sectionKey="amazon_aplus_suggestions" value={listing.amazon_aplus_suggestions} productId={id} onUpdate={updateListing} />
-            </div>
+            <>
+              <div className="flex justify-end">
+                <Button onClick={() => setPushModalMp("amazon")} className="bg-amber-500 hover:bg-amber-600 text-black font-bold">
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Push Listing to Amazon Seller Account
+                </Button>
+              </div>
+              <div className="grid lg:grid-cols-2 gap-4">
+                <EditableSection title="Amazon Title" sectionKey="amazon_title" value={listing.amazon_title} type="text" limit={200} productId={id} onUpdate={updateListing} />
+                <EditableSection title="Backend Keywords" sectionKey="amazon_backend_keywords" value={listing.amazon_backend_keywords} limit={250} productId={id} onUpdate={updateListing} />
+                <EditableSection title="Bullet Points (5)" sectionKey="amazon_bullets" value={listing.amazon_bullets} productId={id} onUpdate={updateListing} />
+                <EditableSection title="Description" sectionKey="amazon_description" value={listing.amazon_description} limit={2000} productId={id} onUpdate={updateListing} />
+                <EditableSection title="Search Terms" sectionKey="amazon_search_terms" value={listing.amazon_search_terms} productId={id} onUpdate={updateListing} />
+                <EditableSection title="A+ Content Suggestions" sectionKey="amazon_aplus_suggestions" value={listing.amazon_aplus_suggestions} productId={id} onUpdate={updateListing} />
+              </div>
+            </>
           )}
         </TabsContent>
 
         {/* Flipkart */}
-        <TabsContent value="flipkart" className="mt-6">
+        <TabsContent value="flipkart" className="mt-6 space-y-4">
           {!listing ? <EmptyGen onGenerate={handleGenerate} generating={generating} /> : (
-            <div className="grid lg:grid-cols-2 gap-4">
-              <EditableSection title="Flipkart Title" sectionKey="flipkart_title" value={listing.flipkart_title} type="text" limit={150} productId={id} onUpdate={updateListing} />
-              <EditableSection title="Highlights" sectionKey="flipkart_highlights" value={listing.flipkart_highlights} productId={id} onUpdate={updateListing} />
-              <EditableSection title="Description" sectionKey="flipkart_description" value={listing.flipkart_description} limit={2000} productId={id} onUpdate={updateListing} />
-              <EditableSection title="Search Keywords" sectionKey="flipkart_search_keywords" value={listing.flipkart_search_keywords} productId={id} onUpdate={updateListing} />
-            </div>
+            <>
+              <div className="flex justify-end">
+                <Button onClick={() => setPushModalMp("flipkart")} className="bg-blue-600 hover:bg-blue-700 text-white font-bold">
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Push Listing to Flipkart Seller Hub
+                </Button>
+              </div>
+              <div className="grid lg:grid-cols-2 gap-4">
+                <EditableSection title="Flipkart Title" sectionKey="flipkart_title" value={listing.flipkart_title} type="text" limit={150} productId={id} onUpdate={updateListing} />
+                <EditableSection title="Highlights" sectionKey="flipkart_highlights" value={listing.flipkart_highlights} productId={id} onUpdate={updateListing} />
+                <EditableSection title="Description" sectionKey="flipkart_description" value={listing.flipkart_description} limit={2000} productId={id} onUpdate={updateListing} />
+                <EditableSection title="Search Keywords" sectionKey="flipkart_search_keywords" value={listing.flipkart_search_keywords} productId={id} onUpdate={updateListing} />
+              </div>
+            </>
           )}
         </TabsContent>
 
         {/* Meesho */}
-        <TabsContent value="meesho" className="mt-6">
+        <TabsContent value="meesho" className="mt-6 space-y-4">
           {!listing ? <EmptyGen onGenerate={handleGenerate} generating={generating} /> : (
-            <div className="grid lg:grid-cols-2 gap-4">
-              <EditableSection title="Meesho Title" sectionKey="meesho_title" value={listing.meesho_title} type="text" limit={120} productId={id} onUpdate={updateListing} />
-              <EditableSection title="Highlights" sectionKey="meesho_highlights" value={listing.meesho_highlights} productId={id} onUpdate={updateListing} />
-              <EditableSection title="Description" sectionKey="meesho_description" value={listing.meesho_description} limit={1500} productId={id} onUpdate={updateListing} />
-              <EditableSection title="Tags" sectionKey="meesho_tags" value={listing.meesho_tags} productId={id} onUpdate={updateListing} />
-            </div>
+            <>
+              <div className="flex justify-end">
+                <Button onClick={() => setPushModalMp("meesho")} className="bg-pink-600 hover:bg-pink-700 text-white font-bold">
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Push Catalog to Meesho Supplier Panel
+                </Button>
+              </div>
+              <div className="grid lg:grid-cols-2 gap-4">
+                <EditableSection title="Meesho Title" sectionKey="meesho_title" value={listing.meesho_title} type="text" limit={120} productId={id} onUpdate={updateListing} />
+                <EditableSection title="Highlights" sectionKey="meesho_highlights" value={listing.meesho_highlights} productId={id} onUpdate={updateListing} />
+                <EditableSection title="Description" sectionKey="meesho_description" value={listing.meesho_description} limit={1500} productId={id} onUpdate={updateListing} />
+                <EditableSection title="Tags" sectionKey="meesho_tags" value={listing.meesho_tags} productId={id} onUpdate={updateListing} />
+              </div>
+            </>
           )}
         </TabsContent>
 
@@ -406,6 +432,13 @@ export default function ProductDetails() {
           </div>
         </div>
       </div>
+
+      <PushListingModal
+        isOpen={Boolean(pushModalMp)}
+        onClose={() => setPushModalMp(null)}
+        marketplace={pushModalMp}
+        product={product}
+      />
     </div>
   );
 }

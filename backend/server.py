@@ -43,6 +43,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("ecommerce_content_studio")
 
 app = FastAPI(title="AI Ecommerce Content Studio API")
+app.state.db = db
 api_router = APIRouter(prefix="/api")
 
 
@@ -350,6 +351,11 @@ async def _recompute_quality(user_id: str, product_id: str):
 
 @api_router.post("/products/{product_id}/generate")
 async def generate(product_id: str, user: User = Depends(get_current_user)):
+    # Verify subscription usage limits
+    import services.subscription_service as subscription_service
+    sub_service = subscription_service.SubscriptionService(db)
+    await sub_service.check_and_increment_usage(user.user_id, "listing_generation", {"product_id": product_id})
+
     product = await db.products.find_one({"id": product_id, "user_id": user.user_id}, {"_id": 0})
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
@@ -406,6 +412,10 @@ async def get_quality(product_id: str, user: User = Depends(get_current_user)):
 @api_router.post("/products/{product_id}/generate-seo")
 async def generate_seo_endpoint(product_id: str, user: User = Depends(get_current_user)):
     """Generate comprehensive SEO keywords and metadata for a product."""
+    import services.subscription_service as subscription_service
+    sub_service = subscription_service.SubscriptionService(db)
+    await sub_service.check_and_increment_usage(user.user_id, "seo_generation", {"product_id": product_id})
+
     product = await db.products.find_one({"id": product_id, "user_id": user.user_id}, {"_id": 0})
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
@@ -486,6 +496,10 @@ async def analyze_image(product_id: str, payload: Dict[str, Any], user: User = D
 @api_router.post("/products/{product_id}/images/generate")
 async def generate_image(product_id: str, payload: Dict[str, Any], user: User = Depends(get_current_user)):
     """Generate ONE scene image for a preset (frontend loops for a set + progress bar)."""
+    import services.subscription_service as subscription_service
+    sub_service = subscription_service.SubscriptionService(db)
+    await sub_service.check_and_increment_usage(user.user_id, "image_generation", {"product_id": product_id})
+
     product = await db.products.find_one({"id": product_id, "user_id": user.user_id}, {"_id": 0})
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
@@ -558,6 +572,10 @@ async def download_images_zip(product_id: str, user: User = Depends(get_current_
 # --------------------------------------------------------------------------- #
 @api_router.post("/products/{product_id}/agent")
 async def run_agent(product_id: str, payload: Dict[str, Any] | None = None, user: User = Depends(get_current_user)):
+    import services.subscription_service as subscription_service
+    sub_service = subscription_service.SubscriptionService(db)
+    await sub_service.check_and_increment_usage(user.user_id, "agent_pipeline", {"product_id": product_id})
+
     payload = payload or {}
     product = await db.products.find_one({"id": product_id, "user_id": user.user_id}, {"_id": 0})
     if not product:
@@ -942,6 +960,87 @@ async def update_settings(data: SettingsModel, user: User = Depends(get_current_
         payload["api_key"] = existing.get("api_key", "")
     await db.settings.update_one({"user_id": user.user_id}, {"$set": {**payload, "user_id": user.user_id}}, upsert=True)
     return await get_settings(user)
+
+
+# --------------------------------------------------------------------------- #
+# Marketplace & Subscription API Endpoints
+# --------------------------------------------------------------------------- #
+import services.subscription_service as subscription_service
+from api.marketplaces_router import ConnectPayload, ImportItemPayload, PublishPayload
+
+@api_router.post("/marketplaces/publish")
+async def publish_mp_product(payload: PublishPayload, request: Request, user: User = Depends(get_current_user)):
+    from api.marketplaces_router import publish_to_marketplace
+    return await publish_to_marketplace(payload, request, user.user_id)
+from api.subscriptions_router import CreateOrderPayload, VerifyPaymentPayload, Header
+
+@api_router.get("/marketplaces/dashboard")
+async def get_mp_dashboard(request: Request, user: User = Depends(get_current_user)):
+    from api.marketplaces_router import get_marketplace_dashboard
+    return await get_marketplace_dashboard(request, user.user_id)
+
+@api_router.post("/marketplaces/{marketplace}/connect")
+async def connect_mp(marketplace: str, payload: ConnectPayload, request: Request, user: User = Depends(get_current_user)):
+    from api.marketplaces_router import connect_marketplace
+    return await connect_marketplace(marketplace, payload, request, user.user_id)
+
+@api_router.delete("/marketplaces/{marketplace}/disconnect")
+async def disconnect_mp(marketplace: str, request: Request, user: User = Depends(get_current_user)):
+    from api.marketplaces_router import disconnect_marketplace
+    return await disconnect_marketplace(marketplace, request, user.user_id)
+
+@api_router.get("/marketplaces/{marketplace}/products")
+async def fetch_mp_products(marketplace: str, request: Request, user: User = Depends(get_current_user)):
+    from api.marketplaces_router import fetch_marketplace_products
+    return await fetch_marketplace_products(marketplace, request, user.user_id)
+
+@api_router.post("/marketplaces/import")
+async def import_mp_products(payload: ImportItemPayload, request: Request, user: User = Depends(get_current_user)):
+    from api.marketplaces_router import import_marketplace_products
+    return await import_marketplace_products(payload, request, user.user_id)
+
+@api_router.get("/subscriptions/my-subscription")
+async def get_my_sub(request: Request, user: User = Depends(get_current_user)):
+    sub_service = subscription_service.SubscriptionService(db)
+    sub = await sub_service.get_user_subscription(user.user_id)
+    usage_count = await db.ai_generations.count_documents({"user_id": user.user_id})
+    sub["usage_count"] = usage_count
+    if not sub["is_unlimited"]:
+        sub["remaining_generations"] = max(0, sub["limit"] - usage_count)
+    else:
+        sub["remaining_generations"] = "Unlimited"
+    return sub
+
+@api_router.post("/subscriptions/create-order")
+async def create_sub_order(payload: CreateOrderPayload, request: Request, user: User = Depends(get_current_user)):
+    sub_service = subscription_service.SubscriptionService(db)
+    return await sub_service.create_razorpay_order(user.user_id, payload.plan_id)
+
+@api_router.post("/subscriptions/create-subscription")
+async def create_sub_api(payload: CreateOrderPayload, request: Request, user: User = Depends(get_current_user)):
+    sub_service = subscription_service.SubscriptionService(db)
+    return await sub_service.create_razorpay_subscription(user.user_id, payload.plan_id)
+
+@api_router.post("/subscriptions/verify")
+async def verify_sub_payment(payload: VerifyPaymentPayload, request: Request, user: User = Depends(get_current_user)):
+    sub_service = subscription_service.SubscriptionService(db)
+    return await sub_service.verify_payment(
+        user_id=user.user_id,
+        razorpay_order_id=payload.razorpay_order_id,
+        razorpay_payment_id=payload.razorpay_payment_id,
+        razorpay_signature=payload.razorpay_signature,
+    )
+
+@api_router.post("/subscriptions/webhook")
+async def sub_webhook(request: Request, x_razorpay_signature: Optional[str] = Header(None)):
+    sub_service = subscription_service.SubscriptionService(db)
+    body_bytes = await request.body()
+    return await sub_service.verify_and_process_webhook(body_bytes, x_razorpay_signature or "")
+
+@api_router.post("/subscriptions/cancel")
+async def cancel_sub(request: Request, user: User = Depends(get_current_user)):
+    sub_service = subscription_service.SubscriptionService(db)
+    return await sub_service.cancel_subscription(user.user_id)
 
 
 @api_router.get("/")

@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   Package,
   Upload,
+  Download,
   FileSpreadsheet,
   Settings as SettingsIcon,
   Boxes,
@@ -28,6 +29,7 @@ import { useAuth } from "@/context/AuthContext";
 
 const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, testid: "nav-dashboard" },
+  { to: "/import-products", label: "Import Products", icon: Download, testid: "nav-import-products" },
   { to: "/products", label: "Products", icon: Package, testid: "nav-products" },
   { to: "/bulk-upload", label: "Bulk Upload", icon: Upload, testid: "nav-bulk-upload" },
   { to: "/exports", label: "Exports", icon: FileSpreadsheet, testid: "nav-exports" },

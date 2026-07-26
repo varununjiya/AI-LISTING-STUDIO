@@ -28,7 +28,7 @@ import zipfile
 import pytest
 import requests
 
-BASE_URL = os.environ["REACT_APP_BACKEND_URL"].rstrip("/")
+BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "http://localhost:8000/api").rstrip("/")
 TOKEN = "test_session_fixed_123"
 SEEDED_PRODUCT_ID = "c908a257-c2be-48d1-a3c0-58378305d711"
 

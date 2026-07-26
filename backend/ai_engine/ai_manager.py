@@ -170,9 +170,12 @@ RULES:
         settings: Dict[str, Any],
     ) -> str:
         """
-        Generate an AI product image using Gemini (Imagen 3) or fallback service.
+        Generate an AI product image using configured ImageGenerationProvider (Gemini, HuggingFace, Pollinations).
         """
-        service = (settings.get("image_service") or self.image_service or "gemini").lower()
+        from .image_providers import get_image_provider
+
+        service = (settings.get("image_service") or settings.get("IMAGE_GENERATION_PROVIDER") or self.image_service or "gemini").lower()
+        provider = get_image_provider(service)
 
         bg_prompt = f"""
 Professional commercial product studio background.
@@ -189,23 +192,14 @@ Requirements:
 """
 
         try:
-            # 1. Generate the studio/lifestyle AI scene background
-            if service == "gemini" or self.gemini.is_configured():
-                logger.info("Generating AI background scene using Google Gemini...")
-                scene_base64 = await self.gemini.generate_with_retry(
-                    prompt=bg_prompt,
-                    input_image_base64=input_image_base64,
-                    max_retries=3,
-                )
-            else:
-                logger.info(f"Generating AI background scene using {service}...")
-                scene_base64 = await self.pollinations.generate_with_retry(
-                    prompt=bg_prompt,
-                    input_image_base64=input_image_base64,
-                    width=1024,
-                    height=1024,
-                    max_retries=3,
-                )
+            # 1. Generate the studio/lifestyle AI scene background using selected provider
+            logger.info(f"Generating AI background scene using provider: {service}...")
+            scene_base64 = await provider.generate_image(
+                prompt=bg_prompt,
+                input_image_base64=input_image_base64,
+                width=1024,
+                height=1024,
+            )
 
             # 2. Extract exact product cutout and composite onto the AI scene
             if input_image_base64:
@@ -223,9 +217,7 @@ Requirements:
                 except Exception as comp_err:
                     logger.warning(f"Product compositing warning: {comp_err}. Returning AI scene.")
 
-
             return scene_base64
-
 
         except Exception as e:
             logger.exception(e)

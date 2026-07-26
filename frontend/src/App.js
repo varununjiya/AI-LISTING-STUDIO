@@ -16,6 +16,7 @@ import ProductDetails from "@/pages/ProductDetails";
 import BulkUpload from "@/pages/BulkUpload";
 import Exports from "@/pages/Exports";
 import Settings from "@/pages/Settings";
+import ImportProducts from "@/pages/ImportProducts";
 
 function AppRouter() {
   const location = useLocation();
@@ -42,6 +43,7 @@ function AppRouter() {
         <Route path="/products/new" element={<AddProduct />} />
         <Route path="/products/:id" element={<ProductDetails />} />
         <Route path="/products/:id/edit" element={<AddProduct />} />
+        <Route path="/import-products" element={<ImportProducts />} />
         <Route path="/bulk-upload" element={<BulkUpload />} />
         <Route path="/exports" element={<Exports />} />
         <Route path="/settings" element={<Settings />} />
