@@ -95,6 +95,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [load]);
 
   const catChartData = Object.entries(stats?.by_category || {})

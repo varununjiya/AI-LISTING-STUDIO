@@ -39,6 +39,7 @@ export default function ImportProducts() {
 
   useEffect(() => {
     fetchProducts(selectedMarketplace);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedMarketplace]);
 
   const toggleSelectAll = () => {

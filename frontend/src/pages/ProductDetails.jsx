@@ -143,6 +143,7 @@ export default function ProductDetails() {
   useEffect(() => {
     load();
     api.get("/image-presets").then(({ data }) => setPresets(data)).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [load]);
 
   const handleGenerate = async () => {

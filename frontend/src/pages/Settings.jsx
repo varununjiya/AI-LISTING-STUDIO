@@ -95,6 +95,7 @@ export default function Settings() {
       });
       setLoading(false);
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));

@@ -35,6 +35,7 @@ export default function Exports() {
 
   useEffect(() => {
     loadExports();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleExport = async (t) => {
