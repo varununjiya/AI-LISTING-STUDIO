@@ -163,7 +163,7 @@ export default function Dashboard() {
           </div>
           <div className="flex-1 flex items-center justify-center">
             <div className="relative h-40 w-40">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer minWidth={0} minHeight={0} width="100%" height="100%">
                 <PieChart>
                   <Pie data={[{ value: avgQuality }, { value: 100 - avgQuality }]} innerRadius={58} outerRadius={72} startAngle={90} endAngle={-270} dataKey="value" stroke="none">
                     <Cell fill="#E2FF54" />
@@ -188,7 +188,7 @@ export default function Dashboard() {
           {pieData.length ? (
             <div className="flex items-center gap-4">
               <div className="h-40 w-40">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer minWidth={0} minHeight={0} width="100%" height="100%">
                   <PieChart>
                     <Pie data={pieData} innerRadius={40} outerRadius={72} paddingAngle={3} dataKey="value" stroke="none">
                       {pieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
@@ -239,7 +239,7 @@ export default function Dashboard() {
             <h3 className="font-heading font-bold text-sm">Monthly Trends (Last 6 Months)</h3>
           </div>
           <div className="h-52">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer minWidth={0} minHeight={0} width="100%" height="100%">
               <LineChart data={monthlyData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis 
@@ -282,7 +282,7 @@ export default function Dashboard() {
             <h3 className="font-heading font-bold text-sm">Products by Category</h3>
           </div>
           <div className="h-52">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer minWidth={0} minHeight={0} width="100%" height="100%">
               <BarChart data={catData}>
                 <XAxis dataKey="name" tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
                 <RTooltip cursor={{ fill: "hsl(var(--secondary))" }} />
