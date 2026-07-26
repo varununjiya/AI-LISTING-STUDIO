@@ -97,6 +97,17 @@ export default function Dashboard() {
     load();
   }, [load]);
 
+  const catChartData = Object.entries(stats?.by_category || {})
+    .map(([name, value]) => ({ name: name.length > 10 ? name.slice(0, 10) + "…" : name, value }))
+    .slice(0, 6);
+
+  const monthlyData = (stats?.monthly_trends || []).map(m => ({
+    month: m.month ? new Date(m.month + "-01").toLocaleDateString('en-US', { month: 'short' }) : "",
+    count: m.count || 0
+  }));
+
+  const avgQuality = stats?.avg_quality || 0;
+
   return (
     <div className="space-y-6" data-testid="dashboard-page">
       <div className="flex flex-wrap items-end justify-between gap-4">
@@ -130,27 +141,6 @@ export default function Dashboard() {
           onConnect={(mp) => setConnectModalMp(mp)}
           onRefresh={loadMarketplaceDashboard}
         />
-      </div>
-    .map(([name, value]) => ({ name: name.length > 10 ? name.slice(0, 10) + "…" : name, value }))
-    .slice(0, 6);
-
-  const monthlyData = (stats?.monthly_trends || []).map(m => ({
-    month: m.month ? new Date(m.month + "-01").toLocaleDateString('en-US', { month: 'short' }) : "",
-    count: m.count || 0
-  }));
-
-  const avgQuality = stats?.avg_quality || 0;
-
-  return (
-    <div className="space-y-6" data-testid="dashboard-page">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="font-mono text-xs uppercase tracking-widest text-accent mb-2">Overview</p>
-          <h1 className="font-heading font-black text-3xl sm:text-4xl tracking-tight">Dashboard</h1>
-        </div>
-        <Button onClick={() => navigate("/products/new")} className="rounded-full font-semibold" data-testid="add-product-btn">
-          <Plus className="mr-1 h-4 w-4" /> Add Product
-        </Button>
       </div>
 
       {/* Stat cards */}
