@@ -342,6 +342,7 @@ export default function Dashboard() {
                   <TableCell><Badge className={`${STATUS_STYLE[p.status]} capitalize rounded-full font-medium border-0`}>{p.status}</Badge></TableCell>
                   <TableCell className="text-right"><ArrowUpRight className="h-4 w-4 text-muted-foreground inline" /></TableCell>
                 </TableRow>
+              ))}
             </TableBody>
           </Table>
         )}
