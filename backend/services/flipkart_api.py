@@ -88,7 +88,7 @@ class FlipkartAPIService:
         params = (
             {"grant_type": "refresh_token", "refresh_token": self.refresh_token}
             if self.refresh_token
-            else {"grant_type": "client_credentials", "scope": "Seller_Listing"}
+            else {"grant_type": "client_credentials"}
         )
         endpoint = FLIPKART_OAUTH_TOKEN_URL
         logger.info(
