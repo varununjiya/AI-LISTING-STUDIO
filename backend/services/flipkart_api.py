@@ -33,7 +33,9 @@ class FlipkartAPIService:
         app_id: Optional[str] = None,
         app_secret: Optional[str] = None,
         refresh_token: Optional[str] = None,
+        user_id: Optional[str] = None,
     ):
+        self.user_id = user_id
         self.app_id = app_id or os.getenv("FLIPKART_APP_ID", "")
         self.app_secret = decrypt_token(app_secret) if app_secret else os.getenv("FLIPKART_APP_SECRET", "")
         self.refresh_token = decrypt_token(refresh_token) if refresh_token else os.getenv("FLIPKART_REFRESH_TOKEN", "")
@@ -43,7 +45,7 @@ class FlipkartAPIService:
     @staticmethod
     def get_authorization_url(redirect_uri: str, state: str) -> str:
         """Generate Flipkart Seller Authorization URL."""
-        client_id = os.getenv("FLIPKART_APP_ID", "mock_flipkart_app_id")
+        client_id = os.getenv("FLIPKART_APP_ID", "")
         return (
             f"{FLIPKART_OAUTH_AUTHORIZE_URL}?"
             f"response_type=code&"
@@ -56,13 +58,7 @@ class FlipkartAPIService:
     async def exchange_code_for_tokens(self, code: str, redirect_uri: str) -> Dict[str, Any]:
         """Exchange auth code for access & refresh tokens."""
         if not self.app_id or not self.app_secret:
-            logger.info("Using mock token exchange for Flipkart API")
-            return {
-                "access_token": f"fk_access_token_{code[:8]}",
-                "refresh_token": f"fk_refresh_token_{code[:8]}",
-                "token_type": "bearer",
-                "expires_in": 3600,
-            }
+            raise Exception("Flipkart credentials missing. App ID and App Secret are required.")
 
         auth = (self.app_id, self.app_secret)
         params = {
@@ -73,107 +69,130 @@ class FlipkartAPIService:
         async with httpx.AsyncClient() as client:
             resp = await client.get(FLIPKART_OAUTH_TOKEN_URL, auth=auth, params=params, timeout=10.0)
             if resp.status_code != 200:
-                logger.error("Flipkart token exchange failed: %s", resp.text)
+                logger.error("[FLIPKART OAUTH CODE EXCH FAILED] User: %s | App ID: %s | Response: %s", self.user_id, self.app_id, resp.text)
                 raise Exception(f"Flipkart token exchange failed: {resp.text}")
             return resp.json()
 
-    async def get_valid_access_token(self) -> str:
-        """Get valid access token, auto-refreshing if expired."""
+    async def get_valid_access_token(self) -> Optional[str]:
+        """Get valid access token from Flipkart OAuth, auto-refreshing if expired."""
         now = datetime.now(timezone.utc)
         if self.access_token and self.token_expires_at and self.token_expires_at > now:
             return self.access_token
 
-        if not self.app_id or not self.app_secret or self.app_id.startswith("fk_mock"):
-            self.access_token = "fk_mock_active_access_token"
-            self.token_expires_at = datetime.fromtimestamp(now.timestamp() + 3600, tz=timezone.utc)
-            return self.access_token
+        if not self.app_id or not self.app_secret:
+            logger.warning("[FLIPKART AUTH MISSING] User: %s | App ID: %s | App Secret Exists: %s", self.user_id, self.app_id, bool(self.app_secret))
+            return None
 
-        # Try client_credentials first if no refresh_token, or fallback to refresh_token
+        # Execute live OAuth token request against Flipkart OAuth service
         auth = (self.app_id, self.app_secret)
         params = (
             {"grant_type": "refresh_token", "refresh_token": self.refresh_token}
             if self.refresh_token
             else {"grant_type": "client_credentials", "scope": "Seller_Listing"}
         )
+        endpoint = FLIPKART_OAUTH_TOKEN_URL
+        logger.info(
+            "[FLIPKART API TOKEN REQ] User: %s | App ID: %s | Access Token Exists: False | Endpoint: %s | Grant: %s",
+            self.user_id or "System", self.app_id, endpoint, params.get("grant_type")
+        )
         try:
             async with httpx.AsyncClient() as client:
-                resp = await client.get(FLIPKART_OAUTH_TOKEN_URL, auth=auth, params=params, timeout=10.0)
+                resp = await client.get(endpoint, auth=auth, params=params, timeout=10.0)
                 if resp.status_code == 200:
                     data = resp.json()
-                    self.access_token = data["access_token"]
+                    self.access_token = data.get("access_token")
                     expires_in = data.get("expires_in", 3600)
                     self.token_expires_at = datetime.fromtimestamp(now.timestamp() + expires_in - 60, tz=timezone.utc)
+                    logger.info("[FLIPKART API TOKEN SUCCESS] User: %s | App ID: %s | Access Token Exists: True", self.user_id, self.app_id)
                     return self.access_token
-                logger.error("Flipkart token fetch failed: %s", resp.text)
+                logger.error("[FLIPKART API TOKEN FAILED] User: %s | App ID: %s | Status: %s | Response: %s", self.user_id, self.app_id, resp.status_code, resp.text)
+                raise Exception(f"Flipkart OAuth failed with HTTP {resp.status_code}: {resp.text}")
         except Exception as e:
-            logger.error("Flipkart token fetch error: %s", e)
-
-        self.access_token = "fk_mock_active_access_token"
-        return self.access_token
+            logger.error("[FLIPKART API TOKEN ERROR] User: %s | App ID: %s | Error: %s", self.user_id, self.app_id, e)
+            raise e
 
     async def fetch_listings(self) -> List[Dict[str, Any]]:
-        """Fetch Flipkart listings."""
+        """Fetch Flipkart listings from live API."""
+        endpoint = f"{FLIPKART_API_BASE}/v3/listings/filter"
         try:
             token = await self.get_valid_access_token()
-            if token.startswith("fk_mock"):
-                return self._get_mock_listings()
+            if not token:
+                return []
 
-            url = f"{FLIPKART_API_BASE}/v3/listings/filter"
+            logger.info(
+                "[FLIPKART API REQUEST] User: %s | App ID: %s | Access Token Exists: True | Endpoint: %s | Action: fetch_listings",
+                self.user_id or "System", self.app_id, endpoint
+            )
             headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
             async with httpx.AsyncClient() as client:
-                resp = await client.post(url, headers=headers, json={"filter": {}}, timeout=10.0)
+                resp = await client.post(endpoint, headers=headers, json={"filter": {}}, timeout=10.0)
                 if resp.status_code == 200:
                     return resp.json().get("skuListings", [])
+                logger.warning("[FLIPKART API FETCH LISTINGS WARN] User: %s | Status: %s | Body: %s", self.user_id, resp.status_code, resp.text)
         except Exception as e:
-            logger.warning("Live Flipkart API listings fetch error: %s. Using mock fallback.", e)
+            logger.warning("[FLIPKART API FETCH LISTINGS ERROR] User: %s | Error: %s", self.user_id, e)
 
-        return self._get_mock_listings()
+        return []
 
     async def fetch_orders(self) -> List[Dict[str, Any]]:
-        """Fetch Flipkart orders."""
+        """Fetch Flipkart orders from live API."""
+        endpoint = f"{FLIPKART_API_BASE}/v3/orders/search"
         try:
             token = await self.get_valid_access_token()
-            if token.startswith("fk_mock"):
-                return self._get_mock_orders()
+            if not token:
+                return []
 
-            url = f"{FLIPKART_API_BASE}/v3/orders/search"
+            logger.info(
+                "[FLIPKART API REQUEST] User: %s | App ID: %s | Access Token Exists: True | Endpoint: %s | Action: fetch_orders",
+                self.user_id or "System", self.app_id, endpoint
+            )
             headers = {"Authorization": f"Bearer {token}"}
             async with httpx.AsyncClient() as client:
-                resp = await client.post(url, headers=headers, json={"filter": {}}, timeout=10.0)
+                resp = await client.post(endpoint, headers=headers, json={"filter": {}}, timeout=10.0)
                 if resp.status_code == 200:
                     return resp.json().get("orderItems", [])
         except Exception as e:
-            logger.warning("Live Flipkart API orders fetch error: %s", e)
+            logger.warning("[FLIPKART API FETCH ORDERS ERROR] User: %s | Error: %s", self.user_id, e)
 
-        return self._get_mock_orders()
+        return []
 
     async def fetch_inventory(self) -> List[Dict[str, Any]]:
-        """Fetch Flipkart inventory."""
+        """Fetch Flipkart inventory from live API."""
+        endpoint = f"{FLIPKART_API_BASE}/v3/inventory"
         try:
             token = await self.get_valid_access_token()
-            if token.startswith("fk_mock"):
-                return self._get_mock_inventory()
-        except Exception as e:
-            logger.warning("Flipkart inventory fetch error: %s", e)
+            if not token:
+                return []
 
-        return self._get_mock_inventory()
+            logger.info(
+                "[FLIPKART API REQUEST] User: %s | App ID: %s | Access Token Exists: True | Endpoint: %s | Action: fetch_inventory",
+                self.user_id or "System", self.app_id, endpoint
+            )
+        except Exception as e:
+            logger.warning("[FLIPKART API FETCH INVENTORY ERROR] User: %s | Error: %s", self.user_id, e)
+
+        return []
 
     async def publish_listing(self, sku: str, listing_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Push/publish listing item directly to Flipkart Seller Hub via API."""
+        """Push/publish listing item directly to Flipkart Seller Hub via real API."""
+        endpoint = f"{FLIPKART_API_BASE}/v3/listings"
         try:
             token = await self.get_valid_access_token()
-            if token.startswith("fk_mock"):
-                logger.info("Mock Flipkart API push listing success for SKU: %s", sku)
+            if not token:
+                logger.error("[FLIPKART PUBLISH DENIED] User: %s | App ID: %s | Reason: Missing Access Token", self.user_id, self.app_id)
                 return {
-                    "success": True,
-                    "status": "ACCEPTED",
+                    "success": False,
+                    "status": "UNAUTHORIZED",
                     "marketplace": "flipkart",
                     "sku": sku,
-                    "submission_id": f"sub_fk_{sku[:8]}",
-                    "message": f"Successfully pushed listing to Flipkart Seller Hub for SKU: {sku}"
+                    "error": "Flipkart API Authentication Failed. Application ID or Application Secret is missing or invalid."
                 }
 
-            url = f"{FLIPKART_API_BASE}/v3/listings"
+            logger.info(
+                "[FLIPKART API REQUEST] User: %s | App ID: %s | Access Token Exists: True | Endpoint: %s | Action: publish_listing | SKU: %s",
+                self.user_id or "System", self.app_id, endpoint, sku
+            )
+
             headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
             
             highlights = listing_data.get("flipkart_highlights") or listing_data.get("features") or ""
@@ -190,9 +209,11 @@ class FlipkartAPIService:
                 "mrp": float(listing_data.get("mrp", listing_data.get("selling_price", 999))),
                 "images": listing_data.get("images", []),
             }
+
             async with httpx.AsyncClient() as client:
-                resp = await client.put(url, headers=headers, json=payload, timeout=15.0)
-                if resp.status_code in (200, 202):
+                resp = await client.put(endpoint, headers=headers, json=payload, timeout=15.0)
+                if resp.status_code in (200, 201, 202):
+                    logger.info("[FLIPKART PUBLISH SUCCESS] User: %s | SKU: %s | Response: %s", self.user_id, sku, resp.text)
                     return {
                         "success": True,
                         "status": "ACCEPTED",
@@ -201,15 +222,22 @@ class FlipkartAPIService:
                         "submission_id": f"sub_fk_{sku}",
                         "message": "Successfully published listing to Flipkart Seller Hub."
                     }
-                return {"success": False, "status": "FAILED", "marketplace": "flipkart", "sku": sku, "error": resp.text}
+                logger.error("[FLIPKART PUBLISH FAILED] User: %s | SKU: %s | Status: %s | Error: %s", self.user_id, sku, resp.status_code, resp.text)
+                return {
+                    "success": False,
+                    "status": "FAILED",
+                    "marketplace": "flipkart",
+                    "sku": sku,
+                    "error": f"Flipkart Seller API Error ({resp.status_code}): {resp.text}"
+                }
         except Exception as e:
-            logger.error("Flipkart publish_listing error: %s", e)
+            logger.error("[FLIPKART PUBLISH EXCEPTION] User: %s | SKU: %s | Error: %s", self.user_id, sku, e)
             return {
                 "success": False,
                 "status": "FAILED",
                 "marketplace": "flipkart",
                 "sku": sku,
-                "error": f"Flipkart API Error: {str(e)}"
+                "error": f"Flipkart API Request Error: {str(e)}"
             }
 
     # --- Mock Data Fallbacks ---
